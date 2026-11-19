@@ -1,0 +1,2587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Hero Dash: Square Legends (1–3P Smartboard Edition)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Inter:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: none;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #050814;
+      font-family: 'Inter', sans-serif;
+      color: #f8fafc;
+    }
+    .font-arcade {
+      font-family: 'Orbitron', sans-serif;
+    }
+    .board-glass {
+      background: rgba(9, 14, 28, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 2px solid rgba(56, 189, 248, 0.35);
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.7), inset 0 0 20px rgba(56, 189, 248, 0.08);
+    }
+    .board-btn {
+      transition: transform 0.12s cubic-bezier(0.22, 1, 0.36, 1), filter 0.12s ease;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    }
+    .board-btn:hover {
+      filter: brightness(1.12);
+    }
+    .board-btn:active {
+      transform: scale(0.96);
+    }
+    .jump-pad-active {
+      transform: scale(0.97) translateY(3px) !important;
+      filter: brightness(1.3) !important;
+    }
+    /* Custom Scrollbar inside modals */
+    .modal-scroll {
+      touch-action: pan-y;
+    }
+    .modal-scroll::-webkit-scrollbar {
+      width: 8px;
+    }
+    .modal-scroll::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.8);
+      border-radius: 999px;
+    }
+    .modal-scroll::-webkit-scrollbar-thumb {
+      background: rgba(56, 189, 248, 0.55);
+      border-radius: 999px;
+    }
+    input[type="color"] {
+      -webkit-appearance: none;
+      border: none;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      cursor: pointer;
+      background: transparent;
+    }
+    input[type="color"]::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+    input[type="color"]::-webkit-color-swatch {
+      border: 2px solid rgba(255, 255, 255, 0.55);
+      border-radius: 12px;
+    }
+    input[type="range"] {
+      accent-color: #38bdf8;
+      cursor: pointer;
+      height: 28px;
+    }
+    @keyframes toastDrop {
+      0% { transform: translate(-50%, -140%); opacity: 0; }
+      12% { transform: translate(-50%, 0%); opacity: 1; }
+      88% { transform: translate(-50%, 0%); opacity: 1; }
+      100% { transform: translate(-50%, -140%); opacity: 0; }
+    }
+    .toast-anim {
+      animation: toastDrop 3.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+  </style>
+</head>
+<body class="relative w-full h-full flex flex-col justify-between overflow-hidden">
+
+  <!-- FULLSCREEN RACING & CELEBRATION CANVAS -->
+  <canvas id="gameCanvas" class="absolute inset-0 w-full h-full block z-0"></canvas>
+
+  <!-- ACHIEVEMENT / AWARD TOAST CONTAINER -->
+  <div id="toastContainer" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none flex flex-col items-center gap-2 w-full max-w-lg px-4"></div>
+
+  <!-- TOP SMARTBOARD HUD BAR -->
+  <header class="relative z-20 flex flex-wrap items-center justify-between gap-2 px-3 py-2 sm:px-5 sm:py-2.5 pointer-events-none">
+    <!-- Left: Menu + Course + Progress -->
+    <div class="flex items-center gap-2 pointer-events-auto">
+      <button id="btnMenu" class="board-btn board-glass px-3.5 py-2.5 rounded-2xl flex items-center gap-2 font-arcade text-xs sm:text-sm font-extrabold text-cyan-300 hover:text-white">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        <span class="hidden md:inline">BOARD MENU</span>
+      </button>
+
+      <div class="board-glass px-3.5 py-2 rounded-2xl flex items-center gap-3">
+        <div>
+          <div id="hudCourseName" class="font-arcade text-xs sm:text-sm font-black text-white">Rookie City</div>
+          <div class="flex items-center gap-2 mt-0.5">
+            <div class="w-20 sm:w-28 h-2 bg-slate-900 rounded-full overflow-hidden border border-cyan-500/40">
+              <div id="hudProgressFill" class="h-full bg-gradient-to-r from-cyan-400 via-blue-500 to-fuchsia-500" style="width: 0%"></div>
+            </div>
+            <span id="hudProgressText" class="font-arcade text-[11px] font-bold text-cyan-300">0%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center: Live P1 / P2 / P3 Podium Strip -->
+    <div id="livePodiumStrip" class="flex items-center gap-1.5 sm:gap-2.5 pointer-events-auto">
+      <!-- Populated dynamically by JS -->
+    </div>
+
+    <!-- Right: Big Smartboard Action Buttons -->
+    <div class="flex items-center gap-1.5 sm:gap-2 pointer-events-auto">
+      <button id="btnOpenHeroLab" class="board-btn bg-gradient-to-br from-indigo-600 to-purple-600 border-2 border-indigo-300/40 px-3 py-2.5 sm:px-4 rounded-2xl flex items-center gap-1.5 font-arcade text-xs sm:text-sm font-extrabold text-white">
+        <span>🦸 HERO LAB</span>
+      </button>
+
+      <button id="btnOpenCheats" class="board-btn bg-gradient-to-br from-rose-600 to-amber-600 border-2 border-rose-300/40 px-3 py-2.5 sm:px-4 rounded-2xl flex items-center gap-1.5 font-arcade text-xs sm:text-sm font-extrabold text-white">
+        <span>⚡ CHEATS</span>
+        <span id="cheatActiveIndicator" class="hidden w-2.5 h-2.5 rounded-full bg-lime-300 animate-ping"></span>
+      </button>
+
+      <button id="btnOpenTrophies" class="board-btn bg-gradient-to-br from-amber-400 to-yellow-600 border-2 border-yellow-200/60 px-3 py-2.5 sm:px-4 rounded-2xl flex items-center gap-1.5 font-arcade text-xs sm:text-sm font-black text-slate-950">
+        <span>🏆 <span id="hudTrophyCount">0/12</span></span>
+      </button>
+
+      <button id="btnAudioToggle" class="board-btn board-glass p-2.5 rounded-2xl text-cyan-300 hover:text-white" title="Toggle Synth Audio">
+        <span id="audioIcon" class="text-base sm:text-lg leading-none">🔊</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN START / SMARTBOARD LOBBY OVERLAY -->
+  <main id="lobbyOverlay" class="relative z-20 flex-1 flex items-center justify-center px-3 sm:px-6 py-2 overflow-y-auto modal-scroll">
+    <div class="board-glass rounded-3xl p-4 sm:p-7 max-w-4xl w-full border-cyan-400/50 text-center">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cyan-500/20 border border-cyan-400/40 text-cyan-300 font-arcade text-[11px] sm:text-xs font-bold tracking-widest mb-2">
+        <span>🖥️ SMARTBOARD & MULTI-TOUCH 1–3 PLAYER EDITION</span>
+      </div>
+
+      <h1 class="font-arcade text-2xl sm:text-5xl font-black tracking-tight bg-gradient-to-r from-cyan-300 via-white to-fuchsia-400 bg-clip-text text-transparent mb-1">
+        HERO DASH: SQUARE LEGENDS
+      </h1>
+      <p class="text-slate-300 text-xs sm:text-sm max-w-2xl mx-auto mb-4">
+        Up to 3 square superheroes race together on the same map! Tap your giant bottom smartboard pad or use keyboard keys to jump, hit orbs, flip gravity, and claim the crown.
+      </p>
+
+      <!-- ROW 1: Player Count & Race Rules -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+        <!-- Player Count Selector -->
+        <div class="bg-slate-950/75 p-3 rounded-2xl border border-slate-800">
+          <div class="text-[11px] font-arcade uppercase tracking-wider text-cyan-300 mb-2">1. Select Racers on Board</div>
+          <div class="grid grid-cols-3 gap-2" id="playerCountButtons">
+            <button data-count="1" class="board-btn py-3 rounded-xl font-arcade text-xs sm:text-sm font-black border-2 bg-cyan-500/25 border-cyan-400 text-white">1 PLAYER</button>
+            <button data-count="2" class="board-btn py-3 rounded-xl font-arcade text-xs sm:text-sm font-black border-2 bg-slate-900 border-slate-700 text-slate-300">2 PLAYERS</button>
+            <button data-count="3" class="board-btn py-3 rounded-xl font-arcade text-xs sm:text-sm font-black border-2 bg-slate-900 border-slate-700 text-slate-300">3 PLAYERS</button>
+          </div>
+        </div>
+
+        <!-- Race Rule Selector -->
+        <div class="bg-slate-950/75 p-3 rounded-2xl border border-slate-800">
+          <div class="text-[11px] font-arcade uppercase tracking-wider text-amber-300 mb-2">2. Smartboard Race Rule</div>
+          <div class="grid grid-cols-2 gap-2" id="raceRuleButtons">
+            <button data-rule="bubble" class="board-btn py-3 px-2 rounded-xl font-arcade text-xs font-black border-2 bg-amber-500/25 border-amber-400 text-white">
+              🫧 BUBBLE RESPAWN
+            </button>
+            <button data-rule="sudden" class="board-btn py-3 px-2 rounded-xl font-arcade text-xs font-black border-2 bg-slate-900 border-slate-700 text-slate-300">
+              💀 SUDDEN DEATH
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROW 2: Active Racers Roster Cards -->
+      <div class="bg-slate-950/75 p-3 rounded-2xl border border-slate-800 mb-4">
+        <div class="flex items-center justify-between mb-2 px-1">
+          <span class="text-[11px] font-arcade uppercase tracking-wider text-purple-300">3. Active Square Heroes (Tap Hero to Customize)</span>
+          <span class="text-[11px] text-slate-400 hidden sm:inline">Keys: P1 [SPACE/W] • P2 [I/ENTER] • P3 [P/R-SHIFT]</span>
+        </div>
+        <div id="lobbyRosterGrid" class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <!-- Populated dynamically by JS -->
+        </div>
+      </div>
+
+      <!-- ROW 3: Course Selector -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-5" id="courseGrid">
+        <!-- Populated dynamically by JS -->
+      </div>
+
+      <!-- ROW 4: Giant Start Race & Customize Buttons -->
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+        <button id="btnStartRace" class="board-btn w-full sm:w-auto px-10 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 border-2 border-cyan-300/60 font-arcade text-base sm:text-xl font-black text-white tracking-wider shadow-[0_0_30px_rgba(56,189,248,0.45)]">
+          🚀 START MULTI-HERO RACE
+        </button>
+        <button id="btnLobbyHeroLab" class="board-btn w-full sm:w-auto px-6 py-4 rounded-2xl bg-slate-800 hover:bg-slate-700 border-2 border-purple-400/50 font-arcade text-xs sm:text-sm font-extrabold text-purple-200">
+          🎨 CUSTOMIZE HEROES & LIGHTS
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- BOTTOM MULTI-TOUCH SMARTBOARD JUMP PADS (VISIBLE DURING RACE) -->
+  <footer id="touchPadDock" class="hidden relative z-20 w-full px-2 sm:px-4 pb-2 sm:pb-3 pt-1 pointer-events-auto">
+    <div id="touchPadGrid" class="grid grid-cols-1 gap-2 sm:gap-3 w-full max-w-6xl mx-auto">
+      <!-- Populated dynamically for 1, 2, or 3 active players -->
+    </div>
+  </footer>
+
+  <!-- PODIUM VICTORY / RACE FINISH MODAL -->
+  <div id="podiumOverlay" class="hidden fixed inset-0 z-30 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md">
+    <div class="board-glass rounded-3xl p-5 sm:p-8 max-w-2xl w-full text-center border-amber-400/60 shadow-[0_0_60px_rgba(251,191,36,0.35)]">
+      <div class="text-4xl sm:text-5xl mb-1 animate-bounce">👑</div>
+      <div class="font-arcade text-xs tracking-widest text-amber-300 uppercase mb-1">Course Complete!</div>
+      <h2 id="podiumHeadline" class="font-arcade text-2xl sm:text-4xl font-black text-white mb-4">P1 WINS THE CROWN!</h2>
+
+      <div id="podiumCardsGrid" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+        <!-- Populated with 1st, 2nd, 3rd place hero cards & S/A/B/C ranks -->
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <button id="btnPodiumRematch" class="board-btn flex-1 py-4 px-5 rounded-2xl bg-slate-800 border-2 border-slate-600 font-arcade text-sm font-extrabold text-white">
+          🔄 REMATCH COURSE
+        </button>
+        <button id="btnPodiumNext" class="board-btn flex-1 py-4 px-5 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 border-2 border-yellow-200 font-arcade text-sm font-black text-slate-950">
+          NEXT COURSE ➔
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HERO LAB & LIGHTING STUDIO MODAL (WITH P1 / P2 / P3 TABS) -->
+  <div id="heroLabModal" class="hidden fixed inset-0 z-40 flex items-center justify-center p-2 sm:p-5 bg-slate-950/80 backdrop-blur-md">
+    <div class="board-glass rounded-3xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden border-purple-400/50">
+      <!-- Header + P1/P2/P3 Player Tabs -->
+      <div class="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-6 py-3.5 border-b border-slate-800 bg-slate-950/60">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">🦸‍♂️</span>
+          <h2 class="font-arcade text-base sm:text-xl font-black text-white">HERO & LIGHTING LAB</h2>
+        </div>
+
+        <!-- P1 / P2 / P3 Selector Tabs -->
+        <div class="flex items-center gap-1.5 bg-slate-900 p-1 rounded-2xl border border-slate-700" id="studioPlayerTabs">
+          <button data-pidx="0" class="board-btn px-4 py-2 rounded-xl font-arcade text-xs sm:text-sm font-black bg-cyan-500 text-slate-950">P1 HERO</button>
+          <button data-pidx="1" class="board-btn px-4 py-2 rounded-xl font-arcade text-xs sm:text-sm font-black text-slate-300">P2 HERO</button>
+          <button data-pidx="2" class="board-btn px-4 py-2 rounded-xl font-arcade text-xs sm:text-sm font-black text-slate-300">P3 HERO</button>
+        </div>
+
+        <button id="btnCloseHeroLab" class="board-btn p-2.5 rounded-xl bg-slate-800 hover:bg-rose-600 text-white font-bold">✕</button>
+      </div>
+
+      <!-- Studio Body -->
+      <div class="flex-1 overflow-y-auto modal-scroll p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <!-- Left: Live Square Hero Preview & Presets -->
+        <div class="lg:col-span-5 flex flex-col justify-between bg-slate-950/85 rounded-2xl p-4 border border-cyan-500/30">
+          <div class="flex items-center justify-between text-xs font-arcade">
+            <span id="studioEditingLabel" class="text-cyan-300 font-bold">EDITING PLAYER 1</span>
+            <span id="studioHeroTitle" class="text-amber-300 font-black">Crimson Web-Square</span>
+          </div>
+
+          <canvas id="studioPreviewCanvas" class="w-full h-48 sm:h-56 rounded-xl my-2"></canvas>
+
+          <div>
+            <div class="text-[11px] font-arcade uppercase text-slate-400 mb-2">6 Superhero Presets</div>
+            <div id="studioPresetsGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
+          </div>
+        </div>
+
+        <!-- Right: Customization Controls -->
+        <div class="lg:col-span-7 flex flex-col gap-4">
+          <!-- Colors -->
+          <div class="bg-slate-900/75 rounded-2xl p-4 border border-slate-800">
+            <div class="font-arcade text-xs font-bold text-cyan-300 uppercase mb-3">Suit, Trim & Neon Glow Colors</div>
+            <div class="grid grid-cols-3 gap-3">
+              <label class="flex items-center gap-2.5 bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 cursor-pointer">
+                <input type="color" id="inpPrimary" value="#e11d48">
+                <div class="text-xs"><div class="font-bold text-white">Suit</div><div class="text-[10px] text-slate-400">Primary</div></div>
+              </label>
+              <label class="flex items-center gap-2.5 bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 cursor-pointer">
+                <input type="color" id="inpSecondary" value="#1d4ed8">
+                <div class="text-xs"><div class="font-bold text-white">Accent</div><div class="text-[10px] text-slate-400">Mask/Trim</div></div>
+              </label>
+              <label class="flex items-center gap-2.5 bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 cursor-pointer">
+                <input type="color" id="inpGlow" value="#ffffff">
+                <div class="text-xs"><div class="font-bold text-white">Eyes/Light</div><div class="text-[10px] text-slate-400">Glow</div></div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Gear & Style Dropdowns -->
+          <div class="bg-slate-900/75 rounded-2xl p-4 border border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[11px] font-arcade text-slate-300 mb-1">Mask / Cowl Style</label>
+              <select id="selMask" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-white">
+                <option value="spider">🕸️ Spider Web Mask</option>
+                <option value="cowl">🦇 Bat Cowl + Pointed Ears</option>
+                <option value="domino">🎭 Vigilante Domino Mask</option>
+                <option value="visor">⚡ Speedster Visor + Wings</option>
+                <option value="helmet">🤖 Cyber Tech Helmet</option>
+                <option value="none">😎 Unmasked Hero</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-arcade text-slate-300 mb-1">Chest Emblem</label>
+              <select id="selEmblem" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-white">
+                <option value="web">🕸️ Spider Crest</option>
+                <option value="lightning">⚡ Speedster Lightning</option>
+                <option value="bat">🦇 Night Wing Bat</option>
+                <option value="shield">🛡️ Hero Shield</option>
+                <option value="star">⭐ Cosmic Star</option>
+                <option value="ring">🟢 Nova Power Ring</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-arcade text-slate-300 mb-1">Particle Trail Style</label>
+              <select id="selTrail" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-white">
+                <option value="lightning">⚡ Lightning Sparks</option>
+                <option value="starlight">✨ Starlight Dust</option>
+                <option value="fire">🔥 Fire Exhaust</option>
+                <option value="web">🕸️ Web Mist</option>
+                <option value="rainbow">🌈 Rainbow Prism</option>
+              </select>
+            </div>
+
+            <div class="flex items-center justify-between bg-slate-950/80 px-3.5 py-2.5 rounded-xl border border-slate-800">
+              <div>
+                <div class="font-arcade text-xs font-bold text-white">Flowing Hero Cape</div>
+                <div class="text-[10px] text-slate-400">Dynamic cloth physics</div>
+              </div>
+              <input type="checkbox" id="chkCape" class="w-6 h-6 accent-cyan-400 cursor-pointer" checked>
+            </div>
+          </div>
+
+          <!-- Global Arena Lighting & Atmosphere -->
+          <div class="bg-slate-900/75 rounded-2xl p-4 border border-slate-800">
+            <div class="font-arcade text-xs font-bold text-amber-300 uppercase mb-3">Arena Lighting, Atmosphere & Audio</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-[11px] font-arcade text-slate-300 mb-1">Arena Lighting Theme</label>
+                <select id="selArenaTheme" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-white">
+                  <option value="neon">🌃 Neon Metropolis</option>
+                  <option value="sunset">🌇 Sunset Harbor</option>
+                  <option value="gotham">🌧️ Midnight Gotham Rain</option>
+                  <option value="cyber">💠 Cyber Grid</option>
+                  <option value="cosmic">🌌 Cosmic Void</option>
+                </select>
+              </div>
+
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">Hero Glow Intensity</span>
+                  <span id="lblGlow" class="font-arcade text-cyan-300">100%</span>
+                </div>
+                <input type="range" id="rngGlow" min="0" max="160" value="100" class="w-full">
+              </div>
+
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">Arena Spotlight Halo</span>
+                  <span id="lblSpotlight" class="font-arcade text-amber-300">100%</span>
+                </div>
+                <input type="range" id="rngSpotlight" min="0" max="160" value="100" class="w-full">
+              </div>
+
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">Synth Volume</span>
+                  <span id="lblVolume" class="font-arcade text-emerald-300">70%</span>
+                </div>
+                <input type="range" id="rngVolume" min="0" max="100" value="70" class="w-full">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="px-5 py-3.5 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 bg-slate-950/70">
+        <button id="btnRandomizePlayer" class="board-btn px-4 py-2.5 rounded-xl bg-slate-800 border border-cyan-500/40 font-arcade text-xs font-bold text-cyan-300">
+          🎲 RANDOMIZE THIS HERO
+        </button>
+        <button id="btnSaveAndCloseLab" class="board-btn px-7 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 font-arcade text-xs sm:text-sm font-black text-white">
+          ✔ SAVE & RETURN TO BOARD
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHEATS VAULT MODAL -->
+  <div id="cheatsModal" class="hidden fixed inset-0 z-40 flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md">
+    <div class="board-glass rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden border-rose-500/50">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-800">
+        <div>
+          <h2 class="font-arcade text-base sm:text-xl font-black text-rose-400">⚡ SUPERHERO CHEAT VAULT</h2>
+          <p class="text-xs text-slate-400">Applies to all active players on the smartboard</p>
+        </div>
+        <button id="btnCloseCheats" class="board-btn p-2.5 rounded-xl bg-slate-800 hover:bg-rose-600 text-white font-bold">✕</button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto modal-scroll p-5 space-y-4">
+        <div id="cheatsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+
+        <div class="border-t border-slate-800 pt-4">
+          <div class="text-xs font-arcade text-amber-300 uppercase mb-2.5">Instant Smartboard Boosters</div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <button id="btnCheatAddPoints" class="board-btn py-3.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 font-arcade text-xs font-black text-white">
+              +10,000 POINTS
+            </button>
+            <button id="btnCheatUnlockCosmetics" class="board-btn py-3.5 px-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 font-arcade text-xs font-black text-white">
+              🔓 UNLOCK ALL AWARDS
+            </button>
+            <button id="btnCheatParty" class="board-btn py-3.5 px-3 rounded-xl bg-gradient-to-r from-pink-600 to-rose-600 font-arcade text-xs font-black text-white">
+              🎉 PARTY FIREWORKS
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-5 py-3.5 border-t border-slate-800 flex justify-between items-center bg-slate-950/70">
+        <button id="btnDisableCheats" class="text-xs font-semibold text-slate-400 hover:text-rose-400 underline">Turn Off All Cheats</button>
+        <button id="btnDoneCheats" class="board-btn px-6 py-2.5 rounded-xl bg-rose-600 font-arcade text-xs font-black text-white">DONE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HALL OF HEROES (ACHIEVEMENTS & AWARDS) MODAL -->
+  <div id="trophiesModal" class="hidden fixed inset-0 z-40 flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md">
+    <div class="board-glass rounded-3xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden border-amber-400/50">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-800">
+        <div>
+          <h2 class="font-arcade text-base sm:text-xl font-black text-amber-300">🏆 HALL OF HEROES & AWARDS</h2>
+          <p class="text-xs text-slate-400">12 Smartboard Trophies & Lifetime Career Stats</p>
+        </div>
+        <button id="btnCloseTrophies" class="board-btn p-2.5 rounded-xl bg-slate-800 hover:bg-rose-600 text-white font-bold">✕</button>
+      </div>
+
+      <div class="grid grid-cols-4 gap-2 px-5 py-3 bg-slate-900/90 border-b border-slate-800 text-center">
+        <div><div class="text-[10px] text-slate-400">CAREER PTS</div><div id="statCareerPts" class="font-arcade text-xs sm:text-sm font-black text-emerald-400">0</div></div>
+        <div><div class="text-[10px] text-slate-400">TOTAL JUMPS</div><div id="statCareerJumps" class="font-arcade text-xs sm:text-sm font-black text-cyan-400">0</div></div>
+        <div><div class="text-[10px] text-slate-400">COINS GRABBED</div><div id="statCareerCoins" class="font-arcade text-xs sm:text-sm font-black text-amber-400">0</div></div>
+        <div><div class="text-[10px] text-slate-400">RACES WON</div><div id="statCareerWins" class="font-arcade text-xs sm:text-sm font-black text-fuchsia-400">0</div></div>
+      </div>
+
+      <div id="trophiesGrid" class="flex-1 overflow-y-auto modal-scroll p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * HERO DASH: SQUARE LEGENDS (1–3P SMARTBOARD EDITION)
+     * Complete single-file HTML5 multi-touch 1–3 player rhythm runner.
+     */
+
+    // =========================================================================
+    // 1. SUPERHERO PRESETS, COURSES, THEMES, CHEATS & ACHIEVEMENTS
+    // =========================================================================
+    const HERO_PRESETS = [
+      {
+        id: 'crimson_web',
+        name: 'Crimson Web-Square',
+        primary: '#e11d48',
+        secondary: '#1d4ed8',
+        glow: '#ffffff',
+        mask: 'spider',
+        emblem: 'web',
+        cape: false,
+        trail: 'web'
+      },
+      {
+        id: 'scarlet_speedster',
+        name: 'Scarlet Speedster',
+        primary: '#dc2626',
+        secondary: '#facc15',
+        glow: '#fef08a',
+        mask: 'visor',
+        emblem: 'lightning',
+        cape: false,
+        trail: 'lightning'
+      },
+      {
+        id: 'dark_knight',
+        name: 'Dark Knight Cowl',
+        primary: '#334155',
+        secondary: '#020617',
+        glow: '#38bdf8',
+        mask: 'cowl',
+        emblem: 'bat',
+        cape: true,
+        trail: 'starlight'
+      },
+      {
+        id: 'emerald_nova',
+        name: 'Emerald Nova',
+        primary: '#10b981',
+        secondary: '#064e3b',
+        glow: '#6ee7b7',
+        mask: 'domino',
+        emblem: 'ring',
+        cape: false,
+        trail: 'starlight'
+      },
+      {
+        id: 'solar_titan',
+        name: 'Solar Titan',
+        primary: '#2563eb',
+        secondary: '#dc2626',
+        glow: '#fbbf24',
+        mask: 'domino',
+        emblem: 'star',
+        cape: true,
+        trail: 'fire'
+      },
+      {
+        id: 'cyber_volt',
+        name: 'Cyber Volt',
+        primary: '#06b6d4',
+        secondary: '#c026d3',
+        glow: '#22d3ee',
+        mask: 'helmet',
+        emblem: 'lightning',
+        cape: true,
+        trail: 'rainbow'
+      }
+    ];
+
+    const PLAYER_META = [
+      { label: 'P1', color: '#38bdf8', padBg: 'from-cyan-600 to-blue-700', border: 'border-cyan-300', keys: 'SPACE / W / UP' },
+      { label: 'P2', color: '#f43f5e', padBg: 'from-rose-600 to-pink-700', border: 'border-rose-300', keys: 'I / ENTER' },
+      { label: 'P3', color: '#fbbf24', padBg: 'from-amber-500 to-orange-600', border: 'border-amber-200', keys: 'P / R-SHIFT' }
+    ];
+
+    const COURSES = [
+      { id: 'rookie', name: 'Rookie City', diff: 'EASY', badge: 'text-emerald-300 border-emerald-400/50', speed: 410, length: 5800, bpm: 122, theme: 'neon' },
+      { id: 'skyline', name: 'Neon Skyline', diff: 'MEDIUM', badge: 'text-cyan-300 border-cyan-400/50', speed: 475, length: 7400, bpm: 132, theme: 'sunset' },
+      { id: 'citadel', name: 'Cosmic Citadel', diff: 'HARD', badge: 'text-rose-300 border-rose-400/50', speed: 535, length: 9000, bpm: 142, theme: 'cosmic' },
+      { id: 'endless', name: 'Endless Infinity', diff: 'INFINITE', badge: 'text-fuchsia-300 border-fuchsia-400/50', speed: 455, length: Infinity, bpm: 128, theme: 'gotham' }
+    ];
+
+    const ARENA_THEMES = {
+      neon: {
+        skyTop: '#040817', skyBot: '#0f1c3f', grid: 'rgba(56, 189, 248, 0.14)',
+        ground: '#0b132b', edge: '#38bdf8', spike: '#f43f5e', spikeRim: '#fecdd3',
+        block: '#1e293b', blockRim: '#38bdf8', barColor: 'rgba(56, 189, 248, 0.18)', rain: false
+      },
+      sunset: {
+        skyTop: '#1a0616', skyBot: '#4c1d24', grid: 'rgba(251, 146, 60, 0.15)',
+        ground: '#1f0c14', edge: '#fb923c', spike: '#facc15', spikeRim: '#fef08a',
+        block: '#2e101c', blockRim: '#fb7185', barColor: 'rgba(251, 146, 60, 0.2)', rain: false
+      },
+      gotham: {
+        skyTop: '#02040a', skyBot: '#0b1120', grid: 'rgba(148, 163, 184, 0.08)',
+        ground: '#060913', edge: '#94a3b8', spike: '#e11d48', spikeRim: '#fda4af',
+        block: '#111827', blockRim: '#64748b', barColor: 'rgba(148, 163, 184, 0.14)', rain: true
+      },
+      cyber: {
+        skyTop: '#021412', skyBot: '#06322d', grid: 'rgba(16, 185, 129, 0.18)',
+        ground: '#041f1c', edge: '#10b981', spike: '#d946ef', spikeRim: '#f5d0fe',
+        block: '#08332e', blockRim: '#34d399', barColor: 'rgba(16, 185, 129, 0.2)', rain: false
+      },
+      cosmic: {
+        skyTop: '#0b041c', skyBot: '#240b4c', grid: 'rgba(192, 132, 252, 0.16)',
+        ground: '#13072e', edge: '#c084fc', spike: '#22d3ee', spikeRim: '#cffafe',
+        block: '#1e0c45', blockRim: '#e879f9', barColor: 'rgba(192, 132, 252, 0.2)', rain: false
+      }
+    };
+
+    const CHEATS_LIST = [
+      { id: 'godMode', title: '🛡️ God Mode (All Players)', desc: 'All squares phase safely through spikes and walls.' },
+      { id: 'infiniteJump', title: '🪽 Infinite Air-Jumps', desc: 'Fly and jump endlessly in mid-air for every player.' },
+      { id: 'autoPilot', title: '🤖 Auto-Pilot AI', desc: 'Smart hero AI automatically jumps obstacles & orbs.' },
+      { id: 'moonGravity', title: '🌙 Moon Low-Gravity', desc: 'Floaty, soaring low-gravity superhero leaps.' },
+      { id: 'coinMagnet', title: '🧲 Super Coin Magnet', desc: 'Pulls nearby Hero Coins into active square racers.' },
+      { id: 'hyperOverdrive', title: '🌈 Hyper Overdrive (2x)', desc: '2x Points multiplier + prismatic rainbow strobe.' }
+    ];
+
+    const ACHIEVEMENTS_LIST = [
+      { id: 'jump_1', title: 'First Heroic Leap', desc: 'Perform your first jump.', icon: '🦘', reward: 250, stat: 'jumps', target: 1 },
+      { id: 'jump_100', title: 'Sky Acrobat', desc: 'Perform 100 total jumps.', icon: '🌤️', reward: 600, stat: 'jumps', target: 100 },
+      { id: 'coin_20', title: 'Gold Retriever', desc: 'Collect 20 Hero Coins.', icon: '🪙', reward: 500, stat: 'coins', target: 20 },
+      { id: 'coin_100', title: 'Vault Tycoon', desc: 'Collect 100 Hero Coins.', icon: '💰', reward: 1500, stat: 'coins', target: 100 },
+      { id: 'multi_2p', title: 'Dynamic Duo', desc: 'Complete a 2-Player smartboard race.', icon: '👯', reward: 800, stat: 'duoRaces', target: 1 },
+      { id: 'multi_3p', title: 'Trinity Squad', desc: 'Complete a 3-Player smartboard race.', icon: '🔱', reward: 1200, stat: 'trioRaces', target: 1 },
+      { id: 'lab_edit', title: 'Suit Architect', desc: 'Customize a hero in the Hero Lab.', icon: '🎨', reward: 400, stat: 'edits', target: 1 },
+      { id: 'cheat_use', title: 'Cosmic Hacker', desc: 'Activate a power in the Cheat Vault.', icon: '⚡', reward: 300, stat: 'cheatsUsed', target: 1 },
+      { id: 'win_rookie', title: 'Rookie Protector', desc: 'Finish Rookie City.', icon: '🏙️', reward: 900, stat: 'rookieWins', target: 1 },
+      { id: 'win_skyline', title: 'Skyline Champion', desc: 'Finish Neon Skyline.', icon: '🌇', reward: 1400, stat: 'skylineWins', target: 1 },
+      { id: 'win_citadel', title: 'Citadel Conqueror', desc: 'Finish Cosmic Citadel.', icon: '🌌', reward: 2200, stat: 'citadelWins', target: 1 },
+      { id: 'pts_15k', title: '15K Legend', desc: 'Reach 15,000 lifetime points.', icon: '👑', reward: 2500, stat: 'careerPoints', target: 15000 }
+    ];
+
+    // =========================================================================
+    // 2. PERSISTENT SAVE & MULTI-PLAYER CONFIG
+    // =========================================================================
+    function createDefaultSave() {
+      return {
+        playerCount: 2,
+        raceRule: 'bubble', // 'bubble' or 'sudden'
+        courseIndex: 0,
+        arenaTheme: 'neon',
+        glowIntensity: 100,
+        spotlightHalo: 100,
+        volume: 70,
+        muted: false,
+        heroes: [
+          { ...HERO_PRESETS[0] }, // P1: Crimson Web-Square
+          { ...HERO_PRESETS[1] }, // P2: Scarlet Speedster
+          { ...HERO_PRESETS[2] }  // P3: Dark Knight Cowl
+        ],
+        cheats: {
+          godMode: false,
+          infiniteJump: false,
+          autoPilot: false,
+          moonGravity: false,
+          coinMagnet: false,
+          hyperOverdrive: false
+        },
+        stats: {
+          careerPoints: 0,
+          jumps: 0,
+          coins: 0,
+          wins: 0,
+          duoRaces: 0,
+          trioRaces: 0,
+          edits: 0,
+          cheatsUsed: 0,
+          rookieWins: 0,
+          skylineWins: 0,
+          citadelWins: 0
+        },
+        unlocked: []
+      };
+    }
+
+    let save = loadSave();
+
+    function loadSave() {
+      try {
+        const raw = localStorage.getItem('heroDashSmartboard_v2');
+        if (!raw) return createDefaultSave();
+        const parsed = JSON.parse(raw);
+        const def = createDefaultSave();
+        return {
+          ...def,
+          ...parsed,
+          heroes: [
+            { ...def.heroes[0], ...(parsed.heroes?.[0] || {}) },
+            { ...def.heroes[1], ...(parsed.heroes?.[1] || {}) },
+            { ...def.heroes[2], ...(parsed.heroes?.[2] || {}) }
+          ],
+          cheats: { ...def.cheats, ...(parsed.cheats || {}) },
+          stats: { ...def.stats, ...(parsed.stats || {}) },
+          unlocked: Array.isArray(parsed.unlocked) ? parsed.unlocked : []
+        };
+      } catch (e) {
+        return createDefaultSave();
+      }
+    }
+
+    function persist() {
+      try {
+        localStorage.setItem('heroDashSmartboard_v2', JSON.stringify(save));
+      } catch (e) {}
+    }
+
+    // =========================================================================
+    // 3. PROCEDURAL WEB AUDIO SYNTH ENGINE
+    // =========================================================================
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.playing = false;
+        this.step = 0;
+        this.timer = null;
+      }
+
+      ensureCtx() {
+        if (!this.ctx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (AC) this.ctx = new AC();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      tone(freq, type = 'sawtooth', dur = 0.14, baseGain = 0.12, slide = null) {
+        if (save.muted || save.volume <= 0) return;
+        this.ensureCtx();
+        if (!this.ctx) return;
+
+        const vol = (save.volume / 100) * baseGain;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, now);
+        if (slide) osc.frequency.exponentialRampToValueAtTime(slide, now + dur);
+
+        gain.gain.setValueAtTime(Math.max(0.001, vol), now);
+        gain.gain.exponentialRampToValueAtTime(0.0008, now + dur);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + dur);
+      }
+
+      sfxJump(air = false) { this.tone(air ? 350 : 240, 'square', 0.13, 0.12, air ? 700 : 530); }
+      sfxOrb() { this.tone(420, 'sine', 0.18, 0.16, 920); }
+      sfxPortal() { this.tone(220, 'triangle', 0.28, 0.16, 780); }
+      sfxCoin() {
+        this.tone(988, 'sine', 0.08, 0.14);
+        setTimeout(() => this.tone(1318, 'sine', 0.14, 0.14), 50);
+      }
+      sfxBubble() { this.tone(300, 'sine', 0.22, 0.16, 620); }
+      sfxCrash() {
+        this.tone(135, 'sawtooth', 0.34, 0.2, 32);
+        this.tone(90, 'square', 0.3, 0.18, 26);
+      }
+      sfxAward() {
+        [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => this.tone(f, 'triangle', 0.2, 0.15), i * 70));
+      }
+      sfxFanfare() {
+        [523, 659, 784, 1046, 784, 1046].forEach((f, i) => setTimeout(() => this.tone(f, 'square', 0.22, 0.14), i * 105));
+      }
+
+      startMusic() {
+        if (save.muted || this.playing) return;
+        this.ensureCtx();
+        this.playing = true;
+        this.step = 0;
+
+        const bass = [110, 110, 146.8, 130.8, 98, 98, 130.8, 146.8];
+        const lead = [440, 523.2, 659.2, 523.2, 392, 493.8, 587.3, 659.2];
+
+        const loop = () => {
+          if (!this.playing || save.muted) return;
+          const bpm = COURSES[save.courseIndex]?.bpm || 128;
+          const ms = (60 / bpm / 2) * 1000;
+
+          if (this.step % 2 === 0) {
+            this.tone(112, 'sine', 0.11, 0.18, 36);
+            race.beatPulse = 1.0;
+          }
+          this.tone(bass[this.step % bass.length], 'sawtooth', 0.13, 0.06);
+          if (this.step % 2 === 1) {
+            this.tone(lead[this.step % lead.length], 'triangle', 0.11, 0.045);
+          }
+
+          this.step++;
+          this.timer = setTimeout(loop, Math.max(95, ms));
+        };
+        loop();
+      }
+
+      stopMusic() {
+        this.playing = false;
+        if (this.timer) clearTimeout(this.timer);
+      }
+    }
+
+    const sfx = new SoundEngine();
+
+    // =========================================================================
+    // 4. SQUARE SUPERHERO VECTOR CANVAS RENDERER
+    // =========================================================================
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    function drawSquareHero(ctx, opts) {
+      const {
+        x, y, size, rotation = 0, hero, time = 0, vy = 0,
+        scaleX = 1, scaleY = 1, rainbow = false, rainbowHue = 0,
+        bubbleTimer = 0, tag = ''
+      } = opts;
+
+      const primary = rainbow ? `hsl(${rainbowHue}, 92%, 55%)` : hero.primary;
+      const glow = rainbow ? `hsl(${(rainbowHue + 120) % 360}, 100%, 65%)` : hero.glow;
+      const glowMult = (save.glowIntensity ?? 100) / 100;
+
+      ctx.save();
+      ctx.translate(x + size / 2, y + size / 2);
+
+      // 1. Flowing Hero Cape
+      if (hero.cape) {
+        ctx.save();
+        const wave1 = Math.sin(time * 13) * 6 + vy * 0.02;
+        const wave2 = Math.cos(time * 11) * 8 + vy * 0.03;
+        const len = size * 1.3;
+        ctx.fillStyle = hero.secondary;
+        ctx.shadowColor = glow;
+        ctx.shadowBlur = 10 * glowMult;
+        ctx.beginPath();
+        ctx.moveTo(-size * 0.35, -size * 0.25);
+        ctx.quadraticCurveTo(-size * 0.85, -size * 0.1 + wave1, -size * 0.4 - len, size * 0.1 + wave2);
+        ctx.lineTo(-size * 0.38 - len * 0.9, size * 0.45 + wave1);
+        ctx.quadraticCurveTo(-size * 0.7, size * 0.35, -size * 0.3, size * 0.26);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Spin & Squash/Stretch
+      ctx.rotate(rotation);
+      ctx.scale(scaleX, scaleY);
+
+      const half = size / 2;
+      const rad = Math.max(5, size * 0.15);
+
+      // Outer Glow
+      ctx.shadowColor = glow;
+      ctx.shadowBlur = 18 * glowMult;
+
+      // 2. Square Body
+      roundRect(ctx, -half, -half, size, size, rad);
+      ctx.fillStyle = primary;
+      ctx.fill();
+
+      // Armor highlight gradient
+      const grad = ctx.createLinearGradient(-half, -half, half, half);
+      grad.addColorStop(0, 'rgba(255,255,255,0.28)');
+      grad.addColorStop(0.5, 'rgba(255,255,255,0)');
+      grad.addColorStop(1, 'rgba(0,0,0,0.34)');
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Neon Trim Border
+      ctx.lineWidth = Math.max(2, size * 0.06);
+      ctx.strokeStyle = glow;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // 3. Utility Belt
+      ctx.fillStyle = hero.secondary;
+      ctx.fillRect(-half + 2, half * 0.56, size - 4, size * 0.16);
+      ctx.fillStyle = glow;
+      ctx.fillRect(-size * 0.1, half * 0.54, size * 0.2, size * 0.2);
+
+      // 4. Chest Emblem
+      drawEmblem(ctx, hero.emblem, 0, half * 0.24, size * 0.23, glow);
+
+      // 5. Mask / Cowl
+      drawMask(ctx, hero.mask, size, hero.secondary, glow, primary);
+
+      ctx.restore();
+
+      // 6. Respawn Bubble Shield
+      if (bubbleTimer > 0) {
+        ctx.save();
+        ctx.strokeStyle = '#38bdf8';
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.18)';
+        ctx.lineWidth = 3;
+        ctx.shadowColor = '#38bdf8';
+        ctx.shadowBlur = 16;
+        ctx.beginPath();
+        ctx.arc(x + size / 2, y + size / 2, size * 0.82, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // 7. Overhead P1 / P2 / P3 Smartboard Badge
+      if (tag) {
+        ctx.save();
+        const bx = x + size / 2;
+        const by = y - 16;
+        ctx.font = '900 12px Orbitron, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'rgba(5, 8, 20, 0.85)';
+        roundRect(ctx, bx - 16, by - 9, 32, 18, 6);
+        ctx.fill();
+        ctx.strokeStyle = glow;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(tag, bx, by + 1);
+        ctx.restore();
+      }
+    }
+
+    function drawMask(ctx, mask, size, secondary, glow, primary) {
+      const half = size / 2;
+      ctx.save();
+
+      if (mask === 'spider') {
+        // Web lines across square upper mask
+        ctx.strokeStyle = 'rgba(15, 23, 42, 0.55)';
+        ctx.lineWidth = 1.3;
+        ctx.beginPath();
+        ctx.moveTo(0, -half);
+        ctx.lineTo(0, 0);
+        ctx.moveTo(-half, -half * 0.5);
+        ctx.lineTo(half, -half * 0.5);
+        ctx.moveTo(-half * 0.7, -half);
+        ctx.lineTo(half * 0.7, 0);
+        ctx.moveTo(half * 0.7, -half);
+        ctx.lineTo(-half * 0.7, 0);
+        ctx.stroke();
+      } else if (mask === 'cowl') {
+        ctx.fillStyle = secondary;
+        roundRect(ctx, -half, -half, size, size * 0.54, 5);
+        ctx.fill();
+        // Pointed Bat Ears
+        ctx.beginPath();
+        ctx.moveTo(-half + 2, -half + 2);
+        ctx.lineTo(-half + 5, -half - size * 0.25);
+        ctx.lineTo(-half + size * 0.24, -half + 2);
+        ctx.moveTo(half - 2, -half + 2);
+        ctx.lineTo(half - 5, -half - size * 0.25);
+        ctx.lineTo(half - size * 0.24, -half + 2);
+        ctx.fill();
+      } else if (mask === 'domino') {
+        ctx.fillStyle = secondary;
+        ctx.beginPath();
+        ctx.moveTo(-half * 0.84, -half * 0.45);
+        ctx.lineTo(0, -half * 0.32);
+        ctx.lineTo(half * 0.84, -half * 0.45);
+        ctx.lineTo(half * 0.76, -half * 0.02);
+        ctx.lineTo(0, -half * 0.12);
+        ctx.lineTo(-half * 0.76, -half * 0.02);
+        ctx.closePath();
+        ctx.fill();
+      } else if (mask === 'visor') {
+        // Speedster wing bolts
+        ctx.fillStyle = secondary;
+        ctx.beginPath();
+        ctx.moveTo(half * 0.65, -half * 0.22);
+        ctx.lineTo(half + size * 0.24, -half * 0.58);
+        ctx.lineTo(half * 0.85, -half * 0.04);
+        ctx.closePath();
+        ctx.fill();
+      } else if (mask === 'helmet') {
+        ctx.fillStyle = secondary;
+        roundRect(ctx, -half, -half, size, size * 0.5, 5);
+        ctx.fill();
+      }
+
+      // Glowing Hero Eyes
+      ctx.shadowColor = glow;
+      ctx.shadowBlur = 10;
+      ctx.fillStyle = glow;
+
+      if (mask === 'helmet') {
+        roundRect(ctx, -half * 0.72, -half * 0.36, size * 0.74, size * 0.2, 4);
+        ctx.fill();
+      } else if (mask === 'spider') {
+        // Large expressive spider lenses
+        ctx.strokeStyle = '#090d16';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-half * 0.52, -half * 0.38);
+        ctx.quadraticCurveTo(-half * 0.1, -half * 0.32, -half * 0.08, -half * 0.14);
+        ctx.quadraticCurveTo(-half * 0.38, -half * 0.1, -half * 0.52, -half * 0.38);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(half * 0.62, -half * 0.38);
+        ctx.quadraticCurveTo(half * 0.18, -half * 0.32, half * 0.14, -half * 0.14);
+        ctx.quadraticCurveTo(half * 0.46, -half * 0.1, half * 0.62, -half * 0.38);
+        ctx.fill();
+        ctx.stroke();
+      } else {
+        // Sharp heroic eyes
+        ctx.beginPath();
+        ctx.moveTo(-half * 0.46, -half * 0.35);
+        ctx.lineTo(-half * 0.08, -half * 0.22);
+        ctx.lineTo(-half * 0.42, -half * 0.13);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(half * 0.56, -half * 0.35);
+        ctx.lineTo(half * 0.14, -half * 0.22);
+        ctx.lineTo(half * 0.5, -half * 0.13);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+
+    function drawEmblem(ctx, type, cx, cy, r, glow) {
+      if (!type || type === 'none') return;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.fillStyle = glow;
+      ctx.strokeStyle = glow;
+      ctx.shadowColor = glow;
+      ctx.shadowBlur = 6;
+
+      if (type === 'lightning') {
+        ctx.beginPath();
+        ctx.moveTo(r * 0.2, -r);
+        ctx.lineTo(-r * 0.5, r * 0.1);
+        ctx.lineTo(0, r * 0.1);
+        ctx.lineTo(-r * 0.2, r);
+        ctx.lineTo(r * 0.5, -r * 0.1);
+        ctx.lineTo(0, -r * 0.1);
+        ctx.closePath();
+        ctx.fill();
+      } else if (type === 'shield') {
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.75, -r * 0.75);
+        ctx.lineTo(r * 0.75, -r * 0.75);
+        ctx.lineTo(r * 0.6, r * 0.25);
+        ctx.lineTo(0, r * 0.95);
+        ctx.lineTo(-r * 0.6, r * 0.25);
+        ctx.closePath();
+        ctx.fill();
+      } else if (type === 'web') {
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 0.45, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.8, -r * 0.5); ctx.lineTo(r * 0.8, r * 0.5);
+        ctx.moveTo(r * 0.8, -r * 0.5); ctx.lineTo(-r * 0.8, r * 0.5);
+        ctx.stroke();
+      } else if (type === 'star') {
+        ctx.beginPath();
+        for (let i = 0; i < 5; i++) {
+          const a = (i * 4 * Math.PI) / 5 - Math.PI / 2;
+          const px = Math.cos(a) * r;
+          const py = Math.sin(a) * r;
+          if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fill();
+      } else if (type === 'bat') {
+        ctx.beginPath();
+        ctx.moveTo(-r * 1.1, -r * 0.2);
+        ctx.quadraticCurveTo(-r * 0.5, -r * 0.7, 0, -r * 0.25);
+        ctx.quadraticCurveTo(r * 0.5, -r * 0.7, r * 1.1, -r * 0.2);
+        ctx.lineTo(r * 0.55, r * 0.45);
+        ctx.lineTo(0, r * 0.15);
+        ctx.lineTo(-r * 0.55, r * 0.45);
+        ctx.closePath();
+        ctx.fill();
+      } else if (type === 'ring') {
+        ctx.lineWidth = Math.max(2, r * 0.28);
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 0.65, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // =========================================================================
+    // 5. MULTI-PLAYER RACE ENGINE (1–3 SIMULTANEOUS HEROES)
+    // =========================================================================
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const race = {
+      state: 'LOBBY', // LOBBY, RACING, PODIUM
+      time: 0,
+      beatPulse: 0,
+      screenShake: 0,
+      flashAlpha: 0,
+      flashColor: '#ffffff',
+      cameraX: 0,
+      players: [],
+      obstacles: [],
+      orbs: [],
+      portals: [],
+      coins: [],
+      particles: [],
+      confetti: [],
+      popups: [],
+      rainDrops: [],
+      nextSpawnX: 800
+    };
+
+    function getGroundY() {
+      const dockH = race.state === 'RACING' ? 92 : 0;
+      return Math.floor((window.innerHeight - dockH) * 0.8);
+    }
+
+    function getCeilingY() {
+      return 88;
+    }
+
+    function resizeCanvas() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    // Initialize ambient rain drops for Gotham theme
+    for (let i = 0; i < 90; i++) {
+      race.rainDrops.push({
+        x: Math.random() * 1920,
+        y: Math.random() * 1080,
+        len: 14 + Math.random() * 16,
+        speed: 650 + Math.random() * 350
+      });
+    }
+
+    function createRacers() {
+      const groundY = getGroundY();
+      const size = 44;
+      const count = save.playerCount;
+      race.players = [];
+
+      for (let i = 0; i < count; i++) {
+        // Staggered starting positions so all 1–3 players are clearly visible on screen
+        const startWorldX = 150 + (count - 1 - i) * 58;
+        race.players.push({
+          index: i,
+          tag: `P${i + 1}`,
+          hero: save.heroes[i],
+          worldX: startWorldX,
+          y: groundY - size,
+          size,
+          vy: 0,
+          gravityDir: 1, // 1 = normal, -1 = inverted ceiling gravity
+          speedBonusTimer: 0,
+          rotation: 0,
+          grounded: true,
+          jumpHeld: false,
+          alive: true,
+          finished: false,
+          finishTime: 0,
+          bubbleTimer: 0,
+          score: 0,
+          coins: 0,
+          scaleX: 1,
+          scaleY: 1,
+          nearMissCooldown: 0
+        });
+      }
+      race.cameraX = 0;
+    }
+
+    function buildCourseEntities() {
+      race.obstacles = [];
+      race.orbs = [];
+      race.portals = [];
+      race.coins = [];
+
+      const course = COURSES[save.courseIndex];
+      const maxLen = isFinite(course.length) ? course.length : 5200;
+      let cursor = 760;
+      let idx = 0;
+
+      while (cursor < maxLen - 600) {
+        cursor = spawnCourseChunk(cursor, idx++, save.courseIndex);
+      }
+      race.nextSpawnX = cursor;
+    }
+
+    function spawnCourseChunk(startX, idx, cIdx) {
+      const groundY = getGroundY();
+      const ceilY = getCeilingY();
+      const s = 44;
+      const pattern = (idx + cIdx) % 8;
+
+      if (pattern === 0) {
+        // Single spike + coin arc
+        race.obstacles.push({ type: 'spike', x: startX, y: groundY - s * 0.85, w: s * 0.85, h: s * 0.85 });
+        race.coins.push({ x: startX + s * 0.4, y: groundY - s * 2.4, r: 12, takenBy: [] });
+        return startX + 380;
+      } else if (pattern === 1) {
+        // Elevated platform block + coins + trailing spike
+        race.obstacles.push({ type: 'block', x: startX, y: groundY - s * 1.15, w: s * 2.5, h: s * 1.15 });
+        race.coins.push({ x: startX + s * 0.7, y: groundY - s * 1.9, r: 12, takenBy: [] });
+        race.coins.push({ x: startX + s * 1.8, y: groundY - s * 1.9, r: 12, takenBy: [] });
+        race.obstacles.push({ type: 'spike', x: startX + s * 4.0, y: groundY - s * 0.85, w: s * 0.85, h: s * 0.85 });
+        return startX + 490;
+      } else if (pattern === 2) {
+        // Jump Pad + Triple Spikes + High Coin
+        race.obstacles.push({ type: 'pad', x: startX, y: groundY - 14, w: s * 0.95, h: 14 });
+        race.obstacles.push({ type: 'spike', x: startX + s * 1.5, y: groundY - s * 0.85, w: s * 0.8, h: s * 0.85 });
+        race.obstacles.push({ type: 'spike', x: startX + s * 2.35, y: groundY - s * 0.85, w: s * 0.8, h: s * 0.85 });
+        race.obstacles.push({ type: 'spike', x: startX + s * 3.2, y: groundY - s * 0.85, w: s * 0.8, h: s * 0.85 });
+        race.coins.push({ x: startX + s * 2.35, y: groundY - s * 4.1, r: 13, takenBy: [] });
+        return startX + 540;
+      } else if (pattern === 3) {
+        // Mid-Air Jump Orb over spike gap
+        race.obstacles.push({ type: 'spike', x: startX + s * 0.8, y: groundY - s * 0.85, w: s * 0.82, h: s * 0.85 });
+        race.obstacles.push({ type: 'spike', x: startX + s * 1.65, y: groundY - s * 0.85, w: s * 0.82, h: s * 0.85 });
+        race.orbs.push({ x: startX + s * 1.35, y: groundY - s * 2.35, r: 17 });
+        race.coins.push({ x: startX + s * 2.7, y: groundY - s * 3.3, r: 12, takenBy: [] });
+        return startX + 460;
+      } else if (pattern === 4) {
+        // Speed Boost Portal + Coin Wave
+        race.portals.push({ type: 'speed', x: startX, y: groundY - s * 2.6, w: 28, h: s * 2.6 });
+        for (let c = 0; c < 3; c++) {
+          race.coins.push({ x: startX + 95 + c * 65, y: groundY - s * 1.5, r: 12, takenBy: [] });
+        }
+        race.obstacles.push({ type: 'spike', x: startX + 320, y: groundY - s * 0.85, w: s * 0.85, h: s * 0.85 });
+        return startX + 490;
+      } else if (pattern === 5) {
+        // Gravity Flip Portal Zone (Ceiling run + return portal!)
+        race.portals.push({ type: 'gravity_flip', x: startX, y: groundY - s * 2.8, w: 30, h: s * 2.8 });
+        // Ceiling spike
+        race.obstacles.push({ type: 'ceiling_spike', x: startX + 210, y: ceilY, w: s * 0.85, h: s * 0.85 });
+        race.coins.push({ x: startX + 225, y: ceilY + s * 2.1, r: 12, takenBy: [] });
+        // Gravity restore portal
+        race.portals.push({ type: 'gravity_normal', x: startX + 400, y: ceilY, w: 30, h: s * 2.8 });
+        return startX + 580;
+      } else if (pattern === 6) {
+        // Double step platforms
+        race.obstacles.push({ type: 'block', x: startX, y: groundY - s, w: s * 1.5, h: s });
+        race.obstacles.push({ type: 'block', x: startX + s * 2.3, y: groundY - s * 2.0, w: s * 1.7, h: s * 2.0 });
+        race.coins.push({ x: startX + s * 3.1, y: groundY - s * 2.85, r: 12, takenBy: [] });
+        return startX + 480;
+      } else {
+        // Double spike + trailing coin
+        race.obstacles.push({ type: 'spike', x: startX, y: groundY - s * 0.85, w: s * 0.82, h: s * 0.85 });
+        race.obstacles.push({ type: 'spike', x: startX + s * 0.85, y: groundY - s * 0.85, w: s * 0.82, h: s * 0.85 });
+        race.coins.push({ x: startX + s * 2.4, y: groundY - s * 1.3, r: 12, takenBy: [] });
+        return startX + 430;
+      }
+    }
+
+    function startSmartboardRace() {
+      race.state = 'RACING';
+      race.time = 0;
+      race.screenShake = 0;
+      race.flashAlpha = 0;
+      race.particles = [];
+      race.confetti = [];
+      race.popups = [];
+
+      document.getElementById('lobbyOverlay').classList.add('hidden');
+      document.getElementById('podiumOverlay').classList.add('hidden');
+      document.getElementById('touchPadDock').classList.remove('hidden');
+
+      buildBottomTouchPads();
+      createRacers();
+      buildCourseEntities();
+      updateTopHUD();
+      sfx.startMusic();
+    }
+
+    function playerJump(pIdx, source = 'input') {
+      if (race.state !== 'RACING') return;
+      const p = race.players[pIdx];
+      if (!p || !p.alive || p.finished) return;
+
+      const moon = save.cheats.moonGravity ? 0.78 : 1.0;
+
+      // Check mid-air jump orb activation first
+      for (const orb of race.orbs) {
+        const dist = Math.hypot((p.worldX + p.size / 2) - orb.x, (p.y + p.size / 2) - orb.y);
+        if (dist < p.size * 0.95 + orb.r) {
+          p.vy = -790 * p.gravityDir * moon;
+          p.grounded = false;
+          p.scaleX = 0.76;
+          p.scaleY = 1.26;
+          sfx.sfxOrb();
+          spawnBurst(p.worldX - race.cameraX + p.size / 2, p.y + p.size / 2, '#22d3ee', 14);
+          addPopup(p.worldX - race.cameraX, p.y - 16, `${p.tag} ORB BOOST!`, '#22d3ee');
+          return;
+        }
+      }
+
+      if (p.grounded || save.cheats.infiniteJump) {
+        const air = !p.grounded;
+        p.vy = (air ? -670 : -745) * p.gravityDir * moon;
+        p.grounded = false;
+        p.scaleX = 0.8;
+        p.scaleY = 1.22;
+        sfx.sfxJump(air);
+        spawnBurst(p.worldX - race.cameraX + p.size / 2, p.y + (p.gravityDir === 1 ? p.size : 0), p.hero.glow, 8);
+
+        save.stats.jumps++;
+        checkAchievements();
+      }
+    }
+
+    function handlePlayerCrash(p) {
+      if (save.cheats.godMode || p.bubbleTimer > 0) return;
+
+      race.screenShake = 14;
+      sfx.sfxCrash();
+      const sx = p.worldX - race.cameraX;
+      spawnBurst(sx + p.size / 2, p.y + p.size / 2, p.hero.primary, 28);
+      spawnBurst(sx + p.size / 2, p.y + p.size / 2, p.hero.glow, 16);
+
+      if (save.raceRule === 'bubble') {
+        // Bubble Respawn: Stay active on the board near the lead player with -150 pts penalty
+        const leadX = Math.max(...race.players.map(pl => pl.worldX));
+        p.worldX = Math.max(120, leadX - 45);
+        p.y = getGroundY() - p.size - 75;
+        p.vy = -220;
+        p.gravityDir = 1;
+        p.rotation = 0;
+        p.bubbleTimer = 1.45;
+        p.score = Math.max(0, p.score - 150);
+        sfx.sfxBubble();
+        addPopup(p.worldX - race.cameraX, p.y - 20, `${p.tag} BUBBLE RESPAWN (-150)`, '#38bdf8');
+      } else {
+        // Sudden Death elimination
+        p.alive = false;
+        addPopup(sx, p.y - 20, `${p.tag} ELIMINATED!`, '#f43f5e');
+
+        const remaining = race.players.filter(pl => pl.alive);
+        if (remaining.length === 0 || (save.playerCount > 1 && remaining.length === 1)) {
+          concludeRace();
+        }
+      }
+    }
+
+    function concludeRace() {
+      if (race.state === 'PODIUM') return;
+      race.state = 'PODIUM';
+      sfx.stopMusic();
+      sfx.sfxFanfare();
+      launchFireworks(150);
+
+      // Rank players by finished status, distance, and score
+      const ranked = [...race.players].sort((a, b) => {
+        if (a.finished !== b.finished) return b.finished - a.finished;
+        if (Math.abs(b.worldX - a.worldX) > 40) return b.worldX - a.worldX;
+        return b.score - a.score;
+      });
+
+      const winner = ranked[0];
+      document.getElementById('podiumHeadline').textContent = `${winner.tag} (${winner.hero.name.toUpperCase()}) WINS!`;
+
+      // Update lifetime career stats
+      const totalRacePts = ranked.reduce((acc, pl) => acc + Math.floor(pl.score), 0);
+      save.stats.careerPoints += totalRacePts;
+      save.stats.wins++;
+      if (save.playerCount === 2) save.stats.duoRaces++;
+      if (save.playerCount === 3) save.stats.trioRaces++;
+
+      const cId = COURSES[save.courseIndex].id;
+      if (winner.finished) {
+        if (cId === 'rookie') save.stats.rookieWins++;
+        if (cId === 'skyline') save.stats.skylineWins++;
+        if (cId === 'citadel') save.stats.citadelWins++;
+      }
+      persist();
+      checkAchievements();
+
+      // Build Podium Cards
+      const grid = document.getElementById('podiumCardsGrid');
+      grid.className = `grid grid-cols-1 sm:grid-cols-${ranked.length} gap-3 mb-6`;
+      grid.innerHTML = '';
+
+      const medals = ['🥇 1ST PLACE', '🥈 2ND PLACE', '🥉 3RD PLACE'];
+      ranked.forEach((pl, idx) => {
+        const grade = pl.score >= 3500 ? 'S' : pl.score >= 2200 ? 'A' : pl.score >= 1200 ? 'B' : 'C';
+        const gradeColor = grade === 'S' ? 'text-amber-300 border-amber-400' : grade === 'A' ? 'text-emerald-300 border-emerald-400' : 'text-cyan-300 border-cyan-400';
+        const card = document.createElement('div');
+        card.className = `p-4 rounded-2xl border-2 ${idx === 0 ? 'bg-amber-950/40 border-amber-400 shadow-[0_0_25px_rgba(251,191,36,0.25)]' : 'bg-slate-900/80 border-slate-700'}`;
+        card.innerHTML = `
+          <div class="font-arcade text-xs font-black ${idx === 0 ? 'text-amber-300' : 'text-slate-300'} mb-1">${medals[idx] || '#' + (idx + 1)}</div>
+          <div class="font-arcade text-lg font-black text-white">${pl.tag} • ${pl.hero.name}</div>
+          <div class="my-2 inline-flex items-center justify-center w-11 h-11 rounded-xl border-2 font-arcade text-xl font-black ${gradeColor}">
+            ${grade}
+          </div>
+          <div class="text-xs text-slate-300">Points: <span class="font-arcade font-bold text-emerald-400">${Math.floor(pl.score).toLocaleString()}</span></div>
+          <div class="text-xs text-slate-400">Coins: <span class="font-arcade font-bold text-amber-300">${pl.coins}</span></div>
+        `;
+        grid.appendChild(card);
+      });
+
+      document.getElementById('podiumOverlay').classList.remove('hidden');
+    }
+
+    // =========================================================================
+    // 6. MAIN SIMULATION & RENDERING LOOP
+    // =========================================================================
+    let lastTime = performance.now();
+
+    function tick(now) {
+      const dt = Math.min(0.033, (now - lastTime) / 1000);
+      lastTime = now;
+
+      updateSimulation(dt);
+      renderScene();
+
+      requestAnimationFrame(tick);
+    }
+
+    function updateSimulation(dt) {
+      race.time += dt;
+      race.beatPulse = Math.max(0, race.beatPulse - dt * 3.2);
+      race.screenShake = Math.max(0, race.screenShake - dt * 42);
+      race.flashAlpha = Math.max(0, race.flashAlpha - dt * 1.4);
+
+      // Update Gotham Rain
+      for (const drop of race.rainDrops) {
+        drop.x -= 160 * dt;
+        drop.y += drop.speed * dt;
+        if (drop.y > window.innerHeight) {
+          drop.y = -20;
+          drop.x = Math.random() * window.innerWidth;
+        }
+      }
+
+      updateFX(dt);
+
+      // Lobby Showcase Animation
+      if (race.state === 'LOBBY') {
+        if (race.players.length !== save.playerCount) createRacers();
+        const groundY = getGroundY();
+        race.players.forEach((p, idx) => {
+          p.hero = save.heroes[idx];
+          p.worldX = 130 + idx * 82;
+          p.y = groundY - p.size - Math.abs(Math.sin(race.time * 3.4 + idx * 0.9)) * 26;
+          p.rotation = Math.sin(race.time * 2.2 + idx) * 0.08;
+        });
+        return;
+      }
+
+      if (race.state !== 'RACING') return;
+
+      const course = COURSES[save.courseIndex];
+      const groundY = getGroundY();
+      const ceilY = getCeilingY();
+      const mult = save.cheats.hyperOverdrive ? 2 : 1;
+
+      // Update each active player
+      let leadWorldX = 0;
+
+      for (const p of race.players) {
+        if (!p.alive) continue;
+        leadWorldX = Math.max(leadWorldX, p.worldX);
+
+        p.scaleX += (1 - p.scaleX) * Math.min(1, dt * 14);
+        p.scaleY += (1 - p.scaleY) * Math.min(1, dt * 14);
+        if (p.bubbleTimer > 0) p.bubbleTimer = Math.max(0, p.bubbleTimer - dt);
+        if (p.speedBonusTimer > 0) p.speedBonusTimer = Math.max(0, p.speedBonusTimer - dt);
+        if (p.nearMissCooldown > 0) p.nearMissCooldown = Math.max(0, p.nearMissCooldown - dt);
+
+        if (p.finished) {
+          p.worldX += course.speed * 0.35 * dt;
+          continue;
+        }
+
+        const speedMult = p.speedBonusTimer > 0 ? 1.25 : 1.0;
+        const dx = course.speed * speedMult * dt;
+        p.worldX += dx;
+        p.score += dx * 0.14 * mult;
+
+        // Auto-Pilot AI Cheat
+        if (save.cheats.autoPilot && p.grounded) {
+          for (const obs of race.obstacles) {
+            const ahead = obs.x - (p.worldX + p.size);
+            if (ahead > 0 && ahead < course.speed * 0.33 && obs.type !== 'pad') {
+              playerJump(p.index, 'ai');
+              break;
+            }
+          }
+        }
+
+        // Hold-to-jump
+        if (p.jumpHeld && p.grounded) {
+          playerJump(p.index, 'hold');
+        }
+
+        // Gravity & Vertical Integration
+        const grav = (save.cheats.moonGravity ? 1550 : 2380) * p.gravityDir;
+        p.vy += grav * dt;
+        p.y += p.vy * dt;
+
+        // Geometry Dash Square Spin
+        if (!p.grounded) {
+          p.rotation += 7.4 * p.gravityDir * dt;
+        } else {
+          const snap = Math.round(p.rotation / (Math.PI / 2)) * (Math.PI / 2);
+          p.rotation += (snap - p.rotation) * Math.min(1, dt * 22);
+        }
+
+        let onSurface = false;
+
+        // Floor / Ceiling Bounds
+        if (p.gravityDir === 1 && p.y + p.size >= groundY) {
+          p.y = groundY - p.size;
+          if (!p.grounded && p.vy > 140) { p.scaleX = 1.22; p.scaleY = 0.78; }
+          p.vy = 0;
+          onSurface = true;
+        } else if (p.gravityDir === -1 && p.y <= ceilY) {
+          p.y = ceilY;
+          if (!p.grounded && p.vy < -140) { p.scaleX = 1.22; p.scaleY = 0.78; }
+          p.vy = 0;
+          onSurface = true;
+        }
+
+        // Portals Interaction
+        for (const portal of race.portals) {
+          if (p.worldX + p.size > portal.x && p.worldX < portal.x + portal.w &&
+              p.y + p.size > portal.y && p.y < portal.y + portal.h) {
+            if (portal.type === 'gravity_flip' && p.gravityDir !== -1) {
+              p.gravityDir = -1;
+              p.grounded = false;
+              sfx.sfxPortal();
+              addPopup(p.worldX - race.cameraX, p.y, `${p.tag} GRAVITY FLIP!`, '#e879f9');
+            } else if (portal.type === 'gravity_normal' && p.gravityDir !== 1) {
+              p.gravityDir = 1;
+              p.grounded = false;
+              sfx.sfxPortal();
+              addPopup(p.worldX - race.cameraX, p.y, `${p.tag} NORMAL GRAVITY`, '#38bdf8');
+            } else if (portal.type === 'speed' && p.speedBonusTimer <= 0) {
+              p.speedBonusTimer = 3.0;
+              sfx.sfxPortal();
+              addPopup(p.worldX - race.cameraX, p.y - 14, `${p.tag} HYPER SPEED!`, '#fbbf24');
+            }
+          }
+        }
+
+        // Obstacles Collision & Near-Miss Check
+        const pLeft = p.worldX;
+        const pRight = p.worldX + p.size;
+        const pTop = p.y;
+        const pBot = p.y + p.size;
+
+        for (const obs of race.obstacles) {
+          if (obs.x + obs.w < pLeft - 90 || obs.x > pRight + 90) continue;
+
+          if (obs.type === 'pad') {
+            if (pRight > obs.x && pLeft < obs.x + obs.w && pBot >= obs.y && pTop <= obs.y + obs.h) {
+              p.vy = -1020 * (save.cheats.moonGravity ? 0.78 : 1.0);
+              p.grounded = false;
+              p.scaleX = 0.75;
+              p.scaleY = 1.28;
+              sfx.sfxOrb();
+            }
+          } else if (obs.type === 'block') {
+            const overlapX = pRight > obs.x + 4 && pLeft < obs.x + obs.w - 4;
+            const prevBot = pBot - p.vy * dt;
+            if (overlapX && p.vy >= 0 && prevBot <= obs.y + 15 && pBot >= obs.y) {
+              p.y = obs.y - p.size;
+              p.vy = 0;
+              onSurface = true;
+            } else if (pRight > obs.x + 6 && pLeft < obs.x + obs.w - 6 && pBot > obs.y + 8 && pTop < obs.y + obs.h - 4) {
+              handlePlayerCrash(p);
+              break;
+            }
+          } else if (obs.type === 'spike' || obs.type === 'ceiling_spike') {
+            const pad = 9;
+            if (pRight - pad > obs.x + pad && pLeft + pad < obs.x + obs.w - pad &&
+                pBot - pad > obs.y + pad && pTop + pad < obs.y + obs.h - pad) {
+              handlePlayerCrash(p);
+              break;
+            } else if (p.nearMissCooldown <= 0 && !p.grounded && Math.abs((pLeft + p.size / 2) - (obs.x + obs.w / 2)) < 24 &&
+                       Math.abs(pBot - obs.y) < 34) {
+              p.nearMissCooldown = 0.9;
+              p.score += 100 * mult;
+              addPopup(pLeft - race.cameraX, pTop - 14, `${p.tag} NEAR MISS +100`, '#34d399');
+            }
+          }
+        }
+
+        p.grounded = onSurface;
+
+        // Collectibles (Hero Coins)
+        for (const coin of race.coins) {
+          if (coin.takenBy.includes(p.index)) continue;
+          const px = p.worldX + p.size / 2;
+          const py = p.y + p.size / 2;
+          const dist = Math.hypot(coin.x - px, coin.y - py);
+
+          if (save.cheats.coinMagnet && dist < 240) {
+            coin.x += (px - coin.x) * Math.min(1, dt * 8);
+            coin.y += (py - coin.y) * Math.min(1, dt * 8);
+          }
+
+          if (dist < p.size * 0.72 + coin.r) {
+            coin.takenBy.push(p.index);
+            p.coins++;
+            p.score += 250 * mult;
+            save.stats.coins++;
+            sfx.sfxCoin();
+            spawnBurst(px - race.cameraX, py, '#fbbf24', 12);
+            addPopup(px - race.cameraX, py - 18, `${p.tag} +250`, '#fbbf24');
+            checkAchievements();
+          }
+        }
+
+        // Emit Hero Particle Trail
+        emitHeroTrail(p);
+
+        // Check Finish Line
+        if (isFinite(course.length) && p.worldX >= course.length) {
+          p.finished = true;
+          p.score += 1000;
+          concludeRace();
+          return;
+        }
+      }
+
+      // Smooth Camera tracks lead hero while keeping staggered players framed
+      const targetCam = Math.max(0, leadWorldX - Math.min(260, window.innerWidth * 0.28));
+      race.cameraX += (targetCam - race.cameraX) * Math.min(1, dt * 12);
+
+      // Endless Infinity Course Generation
+      if (!isFinite(course.length) && race.cameraX + window.innerWidth + 900 > race.nextSpawnX) {
+        race.nextSpawnX = spawnCourseChunk(race.nextSpawnX, Math.floor(race.nextSpawnX / 400), save.courseIndex);
+      }
+
+      updateTopHUD();
+    }
+
+    function emitHeroTrail(p) {
+      const sx = p.worldX - race.cameraX;
+      const hue = (race.time * 240 + p.index * 90) % 360;
+      let col = p.hero.glow;
+      if (p.hero.trail === 'fire') col = Math.random() > 0.5 ? '#f97316' : '#ef4444';
+      else if (p.hero.trail === 'starlight') col = '#fef08a';
+      else if (p.hero.trail === 'web') col = '#e2e8f0';
+      else if (p.hero.trail === 'rainbow' || save.cheats.hyperOverdrive) col = `hsl(${hue}, 95%, 60%)`;
+
+      race.particles.push({
+        x: sx + 6,
+        y: p.y + p.size * (0.25 + Math.random() * 0.5),
+        vx: -150 - Math.random() * 100,
+        vy: (Math.random() - 0.5) * 60,
+        size: 3.5,
+        color: col,
+        life: 0.7,
+        decay: 1.9
+      });
+    }
+
+    function spawnBurst(x, y, color, count = 16) {
+      for (let i = 0; i < count; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const sp = 80 + Math.random() * 320;
+        race.particles.push({
+          x, y,
+          vx: Math.cos(a) * sp,
+          vy: Math.sin(a) * sp - 50,
+          size: 3 + Math.random() * 4.5,
+          color,
+          life: 1.0,
+          decay: 1.5 + Math.random()
+        });
+      }
+    }
+
+    function launchFireworks(count = 130) {
+      race.flashAlpha = 0.4;
+      race.flashColor = '#fbbf24';
+      const cols = ['#38bdf8', '#f43f5e', '#fbbf24', '#a855f7', '#10b981', '#ffffff'];
+      for (let i = 0; i < count; i++) {
+        race.confetti.push({
+          x: window.innerWidth * (0.15 + Math.random() * 0.7),
+          y: window.innerHeight * (0.2 + Math.random() * 0.35),
+          vx: (Math.random() - 0.5) * 600,
+          vy: -170 - Math.random() * 400,
+          w: 7 + Math.random() * 6,
+          h: 4 + Math.random() * 5,
+          rot: Math.random() * Math.PI * 2,
+          vRot: (Math.random() - 0.5) * 11,
+          color: cols[i % cols.length],
+          life: 1.0
+        });
+      }
+    }
+
+    function addPopup(x, y, text, color) {
+      race.popups.push({ x, y, text, color, vy: -70, life: 1.0 });
+    }
+
+    function updateFX(dt) {
+      for (let i = race.particles.length - 1; i >= 0; i--) {
+        const pt = race.particles[i];
+        pt.x += pt.vx * dt;
+        pt.y += pt.vy * dt;
+        pt.life -= pt.decay * dt;
+        if (pt.life <= 0) race.particles.splice(i, 1);
+      }
+      for (let i = race.confetti.length - 1; i >= 0; i--) {
+        const c = race.confetti[i];
+        c.x += c.vx * dt;
+        c.y += c.vy * dt;
+        c.vy += 500 * dt;
+        c.rot += c.vRot * dt;
+        c.life -= dt * 0.4;
+        if (c.life <= 0) race.confetti.splice(i, 1);
+      }
+      for (let i = race.popups.length - 1; i >= 0; i--) {
+        const pop = race.popups[i];
+        pop.y += pop.vy * dt;
+        pop.life -= dt * 1.15;
+        if (pop.life <= 0) race.popups.splice(i, 1);
+      }
+    }
+
+    function renderScene() {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const groundY = getGroundY();
+      const ceilY = getCeilingY();
+      const theme = ARENA_THEMES[save.arenaTheme] || ARENA_THEMES.neon;
+      const rainbow = save.cheats.hyperOverdrive;
+      const hue = (race.time * 180) % 360;
+
+      ctx.save();
+      if (race.screenShake > 0) {
+        ctx.translate((Math.random() - 0.5) * race.screenShake, (Math.random() - 0.5) * race.screenShake);
+      }
+
+      // 1. Sky Gradient
+      const sky = ctx.createLinearGradient(0, 0, 0, groundY);
+      sky.addColorStop(0, theme.skyTop);
+      sky.addColorStop(1, theme.skyBot);
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, w, h);
+
+      // 2. Beat-Pulsing Equalizer Skyline Bars
+      const barW = 54;
+      const barScroll = -(race.cameraX * 0.18) % barW;
+      ctx.fillStyle = theme.barColor;
+      for (let i = -1; i < w / barW + 2; i++) {
+        const bx = barScroll + i * barW;
+        const seed = Math.abs(Math.floor((race.cameraX * 0.18) / barW) + i);
+        const bh = 65 + ((seed * 47) % 140) + race.beatPulse * 24;
+        ctx.fillRect(bx + 6, groundY - bh, barW - 12, bh);
+      }
+
+      // 3. Neon Grid
+      ctx.strokeStyle = rainbow ? `hsla(${hue}, 90%, 60%, 0.18)` : theme.grid;
+      ctx.lineWidth = 1;
+      const gSize = 64;
+      const gOff = -(race.cameraX * 0.45) % gSize;
+      for (let gx = gOff; gx < w; gx += gSize) {
+        ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, groundY); ctx.stroke();
+      }
+      for (let gy = groundY % gSize; gy < groundY; gy += gSize) {
+        ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
+      }
+
+      // 4. Dynamic Spotlight Halos around Active Heroes
+      const haloMult = (save.spotlightHalo ?? 100) / 100;
+      if (haloMult > 0.05) {
+        for (const p of race.players) {
+          if (!p.alive) continue;
+          const sx = (race.state === 'LOBBY' ? p.worldX : p.worldX - race.cameraX) + p.size / 2;
+          const sy = p.y + p.size / 2;
+          const rad = (190 + race.beatPulse * 40) * haloMult;
+          const rg = ctx.createRadialGradient(sx, sy, 8, sx, sy, rad);
+          rg.addColorStop(0, hexToRgba(p.hero.glow, 0.22));
+          rg.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = rg;
+          ctx.fillRect(0, 0, w, groundY);
+        }
+      }
+
+      // 5. Ceiling & Ground Neon Strips
+      const edgeCol = rainbow ? `hsl(${hue}, 95%, 60%)` : theme.edge;
+      ctx.fillStyle = theme.ground;
+      ctx.fillRect(0, groundY, w, h - groundY);
+
+      ctx.shadowColor = edgeCol;
+      ctx.shadowBlur = 14 + race.beatPulse * 10;
+      ctx.fillStyle = edgeCol;
+      ctx.fillRect(0, groundY - 2, w, 4);
+      ctx.fillRect(0, ceilY - 2, w, 2);
+      ctx.shadowBlur = 0;
+
+      // 6. Course Entities (Portals, Obstacles, Orbs, Coins, Finish Gate)
+      if (race.state === 'RACING' || race.state === 'PODIUM') {
+        renderCourseEntities(w, groundY, ceilY, theme);
+      }
+
+      // 7. Particles
+      for (const pt of race.particles) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, pt.life);
+        ctx.fillStyle = pt.color;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // 8. Square Superhero Racers (1 to 3 Players)
+      for (const p of race.players) {
+        if (!p.alive) continue;
+        const sx = race.state === 'LOBBY' ? p.worldX : p.worldX - race.cameraX;
+        drawSquareHero(ctx, {
+          x: sx,
+          y: p.y,
+          size: p.size,
+          rotation: p.rotation,
+          hero: p.hero,
+          time: race.time,
+          vy: p.vy,
+          scaleX: p.scaleX,
+          scaleY: p.scaleY,
+          rainbow,
+          rainbowHue: (hue + p.index * 90) % 360,
+          bubbleTimer: p.bubbleTimer,
+          tag: p.tag
+        });
+      }
+
+      // 9. Gotham Rain Atmosphere
+      if (theme.rain) {
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+        ctx.lineWidth = 1.3;
+        ctx.beginPath();
+        for (const d of race.rainDrops) {
+          ctx.moveTo(d.x, d.y);
+          ctx.lineTo(d.x - 4, d.y + d.len);
+        }
+        ctx.stroke();
+      }
+
+      // 10. Floating Bonus Popups & Confetti Fireworks
+      for (const pop of race.popups) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, pop.life);
+        ctx.font = '900 14px Orbitron, sans-serif';
+        ctx.fillStyle = pop.color;
+        ctx.shadowColor = '#000';
+        ctx.shadowBlur = 5;
+        ctx.fillText(pop.text, pop.x, pop.y);
+        ctx.restore();
+      }
+
+      for (const c of race.confetti) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, c.life);
+        ctx.translate(c.x, c.y);
+        ctx.rotate(c.rot);
+        ctx.fillStyle = c.color;
+        ctx.fillRect(-c.w / 2, -c.h / 2, c.w, c.h);
+        ctx.restore();
+      }
+
+      if (race.flashAlpha > 0) {
+        ctx.fillStyle = hexToRgba(race.flashColor, race.flashAlpha);
+        ctx.fillRect(0, 0, w, h);
+      }
+
+      ctx.restore();
+    }
+
+    function renderCourseEntities(w, groundY, ceilY, theme) {
+      const course = COURSES[save.courseIndex];
+
+      // Finish Gate
+      if (isFinite(course.length)) {
+        const fx = course.length - race.cameraX;
+        if (fx > -80 && fx < w + 80) {
+          const g = ctx.createLinearGradient(fx, ceilY, fx + 30, groundY);
+          g.addColorStop(0, '#fbbf24');
+          g.addColorStop(0.5, '#38bdf8');
+          g.addColorStop(1, '#d946ef');
+          ctx.fillStyle = g;
+          ctx.shadowColor = '#fbbf24';
+          ctx.shadowBlur = 22;
+          ctx.fillRect(fx, ceilY, 24, groundY - ceilY);
+          ctx.shadowBlur = 0;
+        }
+      }
+
+      // Portals
+      for (const pt of race.portals) {
+        const sx = pt.x - race.cameraX;
+        if (sx < -60 || sx > w + 60) continue;
+        const col = pt.type === 'gravity_flip' ? '#e879f9' : pt.type === 'gravity_normal' ? '#38bdf8' : '#fbbf24';
+        ctx.save();
+        ctx.strokeStyle = col;
+        ctx.fillStyle = hexToRgba(col, 0.22);
+        ctx.lineWidth = 3;
+        ctx.shadowColor = col;
+        ctx.shadowBlur = 16;
+        roundRect(ctx, sx, pt.y, pt.w, pt.h, 14);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Jump Orbs
+      for (const orb of race.orbs) {
+        const sx = orb.x - race.cameraX;
+        if (sx < -50 || sx > w + 50) continue;
+        const pulse = Math.sin(race.time * 8) * 3;
+        ctx.save();
+        ctx.shadowColor = '#22d3ee';
+        ctx.shadowBlur = 16;
+        ctx.fillStyle = '#22d3ee';
+        ctx.beginPath();
+        ctx.arc(sx, orb.y, orb.r * 0.65, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(sx, orb.y, orb.r + pulse, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Obstacles
+      for (const obs of race.obstacles) {
+        const sx = obs.x - race.cameraX;
+        if (sx + obs.w < -60 || sx > w + 60) continue;
+        ctx.save();
+        if (obs.type === 'spike') {
+          ctx.fillStyle = theme.spike;
+          ctx.strokeStyle = theme.spikeRim;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(sx, obs.y + obs.h);
+          ctx.lineTo(sx + obs.w / 2, obs.y);
+          ctx.lineTo(sx + obs.w, obs.y + obs.h);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        } else if (obs.type === 'ceiling_spike') {
+          ctx.fillStyle = theme.spike;
+          ctx.strokeStyle = theme.spikeRim;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(sx, obs.y);
+          ctx.lineTo(sx + obs.w / 2, obs.y + obs.h);
+          ctx.lineTo(sx + obs.w, obs.y);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        } else if (obs.type === 'block') {
+          ctx.fillStyle = theme.block;
+          ctx.strokeStyle = theme.blockRim;
+          ctx.lineWidth = 2.5;
+          roundRect(ctx, sx, obs.y, obs.w, obs.h, 6);
+          ctx.fill();
+          ctx.stroke();
+        } else if (obs.type === 'pad') {
+          ctx.fillStyle = '#22d3ee';
+          ctx.shadowColor = '#22d3ee';
+          ctx.shadowBlur = 14;
+          roundRect(ctx, sx, obs.y, obs.w, obs.h, 6);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      // Hero Coins
+      for (const coin of race.coins) {
+        const sx = coin.x - race.cameraX;
+        if (sx < -40 || sx > w + 40) continue;
+        const bob = Math.sin(race.time * 6 + coin.x * 0.02) * 4;
+        ctx.save();
+        ctx.translate(sx, coin.y + bob);
+        ctx.shadowColor = '#fbbf24';
+        ctx.shadowBlur = 14;
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath();
+        ctx.arc(0, 0, coin.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#fef08a';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = '#78350f';
+        ctx.font = '900 11px Orbitron, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('H', 0, 1);
+        ctx.restore();
+      }
+    }
+
+    function hexToRgba(hex, alpha) {
+      if (!hex || !hex.startsWith('#')) return `rgba(56, 189, 248, ${alpha})`;
+      const c = hex.replace('#', '');
+      const n = parseInt(c.length === 3 ? c.split('').map(x => x + x).join('') : c, 16);
+      return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+    }
+
+    // =========================================================================
+    // 7. SMARTBOARD UI, MULTI-TOUCH PADS, HERO LAB & TROPHIES
+    // =========================================================================
+    function buildBottomTouchPads() {
+      const grid = document.getElementById('touchPadGrid');
+      const count = save.playerCount;
+      grid.className = `grid grid-cols-${count} gap-2 sm:gap-3 w-full max-w-6xl mx-auto`;
+      grid.innerHTML = '';
+
+      for (let i = 0; i < count; i++) {
+        const meta = PLAYER_META[i];
+        const hero = save.heroes[i];
+        const pad = document.createElement('button');
+        pad.type = 'button';
+        pad.className = `board-btn bg-gradient-to-r ${meta.padBg} border-2 ${meta.border} rounded-2xl py-4 sm:py-5 px-3 flex items-center justify-between shadow-lg`;
+        pad.innerHTML = `
+          <div class="flex items-center gap-2.5">
+            <span class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center font-arcade text-sm sm:text-base font-black bg-slate-950/70 text-white border border-white/30">${meta.label}</span>
+            <div class="text-left">
+              <div class="font-arcade text-xs sm:text-base font-black text-white leading-tight">${meta.label} JUMP</div>
+              <div class="text-[10px] sm:text-xs text-white/80 font-semibold truncate max-w-[110px] sm:max-w-[160px]">${hero.name}</div>
+            </div>
+          </div>
+          <span class="hidden sm:inline-block px-2 py-1 rounded-lg bg-slate-950/50 font-arcade text-[10px] text-white/90">${meta.keys}</span>
+        `;
+
+        // Independent multi-touch pointer capture for up to 3 simultaneous board touches
+        pad.addEventListener('pointerdown', e => {
+          e.preventDefault();
+          pad.setPointerCapture(e.pointerId);
+          pad.classList.add('jump-pad-active');
+          if (race.players[i]) {
+            race.players[i].jumpHeld = true;
+            playerJump(i, 'touch');
+          }
+        });
+
+        const releasePad = e => {
+          pad.classList.remove('jump-pad-active');
+          if (race.players[i]) {
+            race.players[i].jumpHeld = false;
+          }
+        };
+        pad.addEventListener('pointerup', releasePad);
+        pad.addEventListener('pointercancel', releasePad);
+
+        grid.appendChild(pad);
+      }
+    }
+
+    function updateTopHUD() {
+      const course = COURSES[save.courseIndex];
+      document.getElementById('hudCourseName').textContent = course.name;
+
+      const leadX = race.players.length ? Math.max(...race.players.map(p => p.worldX)) : 0;
+      const pct = isFinite(course.length)
+        ? Math.min(100, Math.floor((leadX / course.length) * 100))
+        : Math.min(100, Math.floor((leadX % 3000) / 30));
+
+      document.getElementById('hudProgressFill').style.width = `${pct}%`;
+      document.getElementById('hudProgressText').textContent = isFinite(course.length) ? `${pct}%` : `${Math.floor(leadX / 10)}m`;
+
+      // Live P1 / P2 / P3 Podium Pills
+      const strip = document.getElementById('livePodiumStrip');
+      strip.innerHTML = '';
+      const sorted = [...race.players].sort((a, b) => b.worldX - a.worldX);
+      race.players.forEach((p, idx) => {
+        const rank = sorted.findIndex(s => s.index === idx) + 1;
+        const pill = document.createElement('div');
+        pill.className = `board-glass px-2.5 py-1.5 rounded-xl flex items-center gap-2 border ${p.alive ? 'border-slate-700' : 'border-rose-500/50 opacity-60'}`;
+        pill.innerHTML = `
+          <span class="font-arcade text-xs font-black" style="color:${PLAYER_META[idx].color}">#${rank} ${p.tag}</span>
+          <span class="font-arcade text-xs font-bold text-emerald-400">${Math.floor(p.score).toLocaleString()}</span>
+        `;
+        strip.appendChild(pill);
+      });
+
+      const anyCheat = Object.values(save.cheats).some(Boolean);
+      document.getElementById('cheatActiveIndicator').classList.toggle('hidden', !anyCheat);
+      document.getElementById('hudTrophyCount').textContent = `${save.unlocked.length}/${ACHIEVEMENTS_LIST.length}`;
+    }
+
+    function renderLobbyUI() {
+      // Player count buttons
+      document.querySelectorAll('#playerCountButtons button').forEach(btn => {
+        const cnt = Number(btn.dataset.count);
+        const active = save.playerCount === cnt;
+        btn.className = `board-btn py-3 rounded-xl font-arcade text-xs sm:text-sm font-black border-2 ${
+          active ? 'bg-cyan-500/25 border-cyan-400 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'
+        }`;
+      });
+
+      // Race rule buttons
+      document.querySelectorAll('#raceRuleButtons button').forEach(btn => {
+        const rule = btn.dataset.rule;
+        const active = save.raceRule === rule;
+        btn.className = `board-btn py-3 px-2 rounded-xl font-arcade text-xs font-black border-2 ${
+          active ? 'bg-amber-500/25 border-amber-400 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'
+        }`;
+      });
+
+      // Active Roster Cards
+      const roster = document.getElementById('lobbyRosterGrid');
+      roster.innerHTML = '';
+      for (let i = 0; i < 3; i++) {
+        const active = i < save.playerCount;
+        const hero = save.heroes[i];
+        const meta = PLAYER_META[i];
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = `board-btn p-3 rounded-2xl border-2 text-left flex items-center justify-between ${
+          active ? 'bg-slate-900/90 border-slate-600 hover:border-cyan-400' : 'bg-slate-950/50 border-slate-800/60 opacity-45'
+        }`;
+        card.innerHTML = `
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-9 h-9 rounded-xl shrink-0 flex items-center justify-center font-arcade text-xs font-black text-white" style="background:${hero.primary}; border:2px solid ${hero.glow}">
+              ${meta.label}
+            </div>
+            <div class="min-w-0">
+              <div class="font-arcade text-xs font-black text-white truncate">${hero.name}</div>
+              <div class="text-[10px] text-slate-400">${active ? meta.keys : 'Inactive Slot'}</div>
+            </div>
+          </div>
+          <span class="text-xs font-arcade text-cyan-300 font-bold">EDIT</span>
+        `;
+        card.onclick = () => openHeroLab(i);
+        roster.appendChild(card);
+      }
+
+      // Courses Grid
+      const cGrid = document.getElementById('courseGrid');
+      cGrid.innerHTML = '';
+      COURSES.forEach((c, idx) => {
+        const sel = save.courseIndex === idx;
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = `board-btn p-3 rounded-2xl text-left border-2 ${
+          sel ? 'bg-gradient-to-br from-cyan-900/70 to-indigo-900/70 border-cyan-400' : 'bg-slate-900/80 border-slate-800'
+        }`;
+        card.innerHTML = `
+          <div class="text-[10px] font-arcade px-1.5 py-0.5 rounded border inline-block mb-1 ${c.badge}">${c.diff}</div>
+          <div class="font-arcade text-xs sm:text-sm font-black text-white truncate">${c.name}</div>
+          <div class="text-[10px] text-slate-400">${c.bpm} BPM</div>
+        `;
+        card.onclick = () => {
+          save.courseIndex = idx;
+          save.arenaTheme = c.theme;
+          persist();
+          renderLobbyUI();
+          updateTopHUD();
+        };
+        cGrid.appendChild(card);
+      });
+
+      createRacers();
+      updateTopHUD();
+    }
+
+    // =========================================================================
+    // 8. HERO LAB STUDIO (WITH P1 / P2 / P3 TABS)
+    // =========================================================================
+    let editingPlayerIdx = 0;
+
+    function openHeroLab(playerIdx = 0) {
+      editingPlayerIdx = playerIdx;
+      document.getElementById('heroLabModal').classList.remove('hidden');
+      syncHeroLabUI();
+
+      const pCanvas = document.getElementById('studioPreviewCanvas');
+      const pCtx = pCanvas.getContext('2d');
+
+      function animatePreview() {
+        if (document.getElementById('heroLabModal').classList.contains('hidden')) return;
+        const rect = pCanvas.getBoundingClientRect();
+        pCanvas.width = rect.width * 2;
+        pCanvas.height = rect.height * 2;
+        pCtx.setTransform(2, 0, 0, 2, 0, 0);
+
+        const pw = rect.width;
+        const ph = rect.height;
+        const t = performance.now() / 1000;
+
+        pCtx.fillStyle = '#040814';
+        pCtx.fillRect(0, 0, pw, ph);
+
+        const hero = save.heroes[editingPlayerIdx];
+        const rad = pCtx.createRadialGradient(pw / 2, ph / 2, 10, pw / 2, ph / 2, 110);
+        rad.addColorStop(0, hexToRgba(hero.glow, 0.3));
+        rad.addColorStop(1, 'rgba(0,0,0,0)');
+        pCtx.fillStyle = rad;
+        pCtx.fillRect(0, 0, pw, ph);
+
+        drawSquareHero(pCtx, {
+          x: pw / 2 - 40,
+          y: ph / 2 - 40 + Math.sin(t * 3.2) * 6,
+          size: 80,
+          rotation: Math.sin(t * 1.5) * 0.12,
+          hero,
+          time: t,
+          tag: `P${editingPlayerIdx + 1}`
+        });
+
+        requestAnimationFrame(animatePreview);
+      }
+      animatePreview();
+    }
+
+    function syncHeroLabUI() {
+      // Update P1/P2/P3 Tabs
+      document.querySelectorAll('#studioPlayerTabs button').forEach(btn => {
+        const idx = Number(btn.dataset.pidx);
+        const active = idx === editingPlayerIdx;
+        btn.className = `board-btn px-4 py-2 rounded-xl font-arcade text-xs sm:text-sm font-black ${
+          active ? 'bg-cyan-400 text-slate-950' : 'text-slate-300 hover:text-white'
+        }`;
+      });
+
+      const hero = save.heroes[editingPlayerIdx];
+      document.getElementById('studioEditingLabel').textContent = `EDITING PLAYER ${editingPlayerIdx + 1}`;
+      document.getElementById('studioHeroTitle').textContent = hero.name;
+
+      document.getElementById('inpPrimary').value = hero.primary;
+      document.getElementById('inpSecondary').value = hero.secondary;
+      document.getElementById('inpGlow').value = hero.glow;
+      document.getElementById('selMask').value = hero.mask;
+      document.getElementById('selEmblem').value = hero.emblem;
+      document.getElementById('selTrail').value = hero.trail;
+      document.getElementById('chkCape').checked = !!hero.cape;
+
+      document.getElementById('selArenaTheme').value = save.arenaTheme;
+      document.getElementById('rngGlow').value = save.glowIntensity;
+      document.getElementById('lblGlow').textContent = `${save.glowIntensity}%`;
+      document.getElementById('rngSpotlight').value = save.spotlightHalo;
+      document.getElementById('lblSpotlight').textContent = `${save.spotlightHalo}%`;
+      document.getElementById('rngVolume').value = save.volume;
+      document.getElementById('lblVolume').textContent = `${save.volume}%`;
+
+      // Presets grid
+      const pGrid = document.getElementById('studioPresetsGrid');
+      pGrid.innerHTML = '';
+      HERO_PRESETS.forEach(pr => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'board-btn p-2 rounded-xl bg-slate-900 border border-slate-700 hover:border-cyan-400 text-[11px] font-bold text-white truncate';
+        b.textContent = pr.name;
+        b.onclick = () => {
+          save.heroes[editingPlayerIdx] = { ...pr };
+          save.stats.edits++;
+          persist();
+          syncHeroLabUI();
+          checkAchievements();
+        };
+        pGrid.appendChild(b);
+      });
+    }
+
+    function bindHeroLabEvents() {
+      document.querySelectorAll('#studioPlayerTabs button').forEach(btn => {
+        btn.onclick = () => {
+          editingPlayerIdx = Number(btn.dataset.pidx);
+          syncHeroLabUI();
+        };
+      });
+
+      const onHeroEdit = () => {
+        const h = save.heroes[editingPlayerIdx];
+        h.name = `Custom P${editingPlayerIdx + 1} Hero`;
+        h.primary = document.getElementById('inpPrimary').value;
+        h.secondary = document.getElementById('inpSecondary').value;
+        h.glow = document.getElementById('inpGlow').value;
+        h.mask = document.getElementById('selMask').value;
+        h.emblem = document.getElementById('selEmblem').value;
+        h.trail = document.getElementById('selTrail').value;
+        h.cape = document.getElementById('chkCape').checked;
+
+        save.arenaTheme = document.getElementById('selArenaTheme').value;
+        save.glowIntensity = Number(document.getElementById('rngGlow').value);
+        save.spotlightHalo = Number(document.getElementById('rngSpotlight').value);
+        save.volume = Number(document.getElementById('rngVolume').value);
+
+        document.getElementById('studioHeroTitle').textContent = h.name;
+        document.getElementById('lblGlow').textContent = `${save.glowIntensity}%`;
+        document.getElementById('lblSpotlight').textContent = `${save.spotlightHalo}%`;
+        document.getElementById('lblVolume').textContent = `${save.volume}%`;
+
+        save.stats.edits++;
+        persist();
+        checkAchievements();
+      };
+
+      ['inpPrimary', 'inpSecondary', 'inpGlow', 'selMask', 'selEmblem', 'selTrail', 'chkCape', 'selArenaTheme', 'rngGlow', 'rngSpotlight', 'rngVolume']
+        .forEach(id => document.getElementById(id).addEventListener('input', onHeroEdit));
+
+      document.getElementById('btnRandomizePlayer').onclick = () => {
+        const randHex = () => '#' + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
+        const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+        save.heroes[editingPlayerIdx] = {
+          name: `Mystery P${editingPlayerIdx + 1}`,
+          primary: randHex(),
+          secondary: randHex(),
+          glow: randHex(),
+          mask: pick(['spider', 'cowl', 'domino', 'visor', 'helmet']),
+          emblem: pick(['web', 'lightning', 'bat', 'shield', 'star', 'ring']),
+          trail: pick(['lightning', 'starlight', 'fire', 'web', 'rainbow']),
+          cape: Math.random() > 0.4
+        };
+        save.stats.edits++;
+        persist();
+        syncHeroLabUI();
+        checkAchievements();
+        sfx.sfxCoin();
+      };
+    }
+
+    // =========================================================================
+    // 9. CHEATS & ACHIEVEMENTS MODALS
+    // =========================================================================
+    function checkAchievements() {
+      let changed = false;
+      ACHIEVEMENTS_LIST.forEach(ach => {
+        if (save.unlocked.includes(ach.id)) return;
+        if ((save.stats[ach.stat] || 0) >= ach.target) {
+          save.unlocked.push(ach.id);
+          save.stats.careerPoints += ach.reward;
+          changed = true;
+          sfx.sfxAward();
+          launchFireworks(65);
+          showToast(`AWARD UNLOCKED (+${ach.reward} PTS)`, `${ach.title}: ${ach.desc}`, ach.icon);
+        }
+      });
+      if (changed) persist();
+      updateTopHUD();
+    }
+
+    function showToast(title, subtitle, icon) {
+      const box = document.getElementById('toastContainer');
+      const el = document.createElement('div');
+      el.className = 'toast-anim board-glass px-4 py-3 rounded-2xl border-amber-400 flex items-center gap-3 w-full shadow-2xl';
+      el.innerHTML = `
+        <div class="text-2xl">${icon}</div>
+        <div>
+          <div class="font-arcade text-[10px] font-bold text-amber-300 uppercase">${title}</div>
+          <div class="text-xs sm:text-sm font-bold text-white">${subtitle}</div>
+        </div>
+      `;
+      box.appendChild(el);
+      setTimeout(() => el.remove(), 3700);
+    }
+
+    function renderCheatsModal() {
+      const grid = document.getElementById('cheatsGrid');
+      grid.innerHTML = '';
+      CHEATS_LIST.forEach(ch => {
+        const on = !!save.cheats[ch.id];
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `board-btn p-3.5 rounded-2xl border-2 text-left flex items-start justify-between gap-2 ${
+          on ? 'bg-rose-950/70 border-rose-400' : 'bg-slate-900/80 border-slate-800'
+        }`;
+        btn.innerHTML = `
+          <div>
+            <div class="font-arcade text-xs font-black text-white mb-0.5">${ch.title}</div>
+            <div class="text-[11px] text-slate-400">${ch.desc}</div>
+          </div>
+          <span class="px-2 py-1 rounded-lg font-arcade text-[10px] font-black ${on ? 'bg-lime-400 text-slate-950' : 'bg-slate-800 text-slate-400'}">
+            ${on ? 'ON' : 'OFF'}
+          </span>
+        `;
+        btn.onclick = () => {
+          save.cheats[ch.id] = !save.cheats[ch.id];
+          if (save.cheats[ch.id]) {
+            save.stats.cheatsUsed++;
+            sfx.sfxJump(true);
+            checkAchievements();
+          }
+          persist();
+          renderCheatsModal();
+          updateTopHUD();
+        };
+        grid.appendChild(btn);
+      });
+    }
+
+    function renderTrophiesModal() {
+      document.getElementById('statCareerPts').textContent = Math.floor(save.stats.careerPoints).toLocaleString();
+      document.getElementById('statCareerJumps').textContent = save.stats.jumps.toLocaleString();
+      document.getElementById('statCareerCoins').textContent = save.stats.coins.toLocaleString();
+      document.getElementById('statCareerWins').textContent = save.stats.wins.toLocaleString();
+
+      const grid = document.getElementById('trophiesGrid');
+      grid.innerHTML = '';
+      ACHIEVEMENTS_LIST.forEach(ach => {
+        const unlocked = save.unlocked.includes(ach.id);
+        const cur = Math.min(ach.target, save.stats[ach.stat] || 0);
+        const pct = Math.floor((cur / ach.target) * 100);
+        const card = document.createElement('div');
+        card.className = `p-3.5 rounded-2xl border flex items-center gap-3 ${
+          unlocked ? 'bg-amber-950/45 border-amber-400/70' : 'bg-slate-900/70 border-slate-800 opacity-80'
+        }`;
+        card.innerHTML = `
+          <div class="text-2xl w-11 h-11 rounded-xl flex items-center justify-center ${unlocked ? 'bg-amber-400/20' : 'bg-slate-800'}">
+            ${unlocked ? ach.icon : '🔒'}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex justify-between items-center gap-1">
+              <div class="font-arcade text-xs font-bold text-white truncate">${ach.title}</div>
+              <span class="font-arcade text-[10px] font-bold ${unlocked ? 'text-emerald-400' : 'text-amber-300'}">${unlocked ? 'EARNED' : '+' + ach.reward}</span>
+            </div>
+            <div class="text-[11px] text-slate-400 truncate mb-1.5">${ach.desc}</div>
+            <div class="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden">
+              <div class="h-full ${unlocked ? 'bg-amber-400' : 'bg-cyan-500'}" style="width:${unlocked ? 100 : pct}%"></div>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    // =========================================================================
+    // 10. KEYBOARD & BUTTON EVENT WIRING
+    // =========================================================================
+    window.addEventListener('keydown', e => {
+      // P1: Space, W, ArrowUp
+      if (['Space', 'KeyW', 'ArrowUp'].includes(e.code)) {
+        e.preventDefault();
+        if (race.state === 'RACING' && race.players[0]) {
+          if (!race.players[0].jumpHeld) {
+            race.players[0].jumpHeld = true;
+            playerJump(0, 'key');
+          }
+        }
+      }
+      // P2: KeyI, Enter
+      if (['KeyI', 'Enter'].includes(e.code)) {
+        e.preventDefault();
+        if (race.state === 'RACING' && race.players[1]) {
+          if (!race.players[1].jumpHeld) {
+            race.players[1].jumpHeld = true;
+            playerJump(1, 'key');
+          }
+        }
+      }
+      // P3: KeyP, ShiftRight
+      if (['KeyP', 'ShiftRight'].includes(e.code)) {
+        e.preventDefault();
+        if (race.state === 'RACING' && race.players[2]) {
+          if (!race.players[2].jumpHeld) {
+            race.players[2].jumpHeld = true;
+            playerJump(2, 'key');
+          }
+        }
+      }
+      // Quick Cheats shortcut
+      if (e.code === 'KeyC') {
+        document.getElementById('cheatsModal').classList.remove('hidden');
+        renderCheatsModal();
+      }
+    });
+
+    window.addEventListener('keyup', e => {
+      if (['Space', 'KeyW', 'ArrowUp'].includes(e.code) && race.players[0]) race.players[0].jumpHeld = false;
+      if (['KeyI', 'Enter'].includes(e.code) && race.players[1]) race.players[1].jumpHeld = false;
+      if (['KeyP', 'ShiftRight'].includes(e.code) && race.players[2]) race.players[2].jumpHeld = false;
+    });
+
+    // Lobby selectors
+    document.querySelectorAll('#playerCountButtons button').forEach(btn => {
+      btn.onclick = () => {
+        save.playerCount = Number(btn.dataset.count);
+        persist();
+        renderLobbyUI();
+      };
+    });
+
+    document.querySelectorAll('#raceRuleButtons button').forEach(btn => {
+      btn.onclick = () => {
+        save.raceRule = btn.dataset.rule;
+        persist();
+        renderLobbyUI();
+      };
+    });
+
+    document.getElementById('btnStartRace').onclick = startSmartboardRace;
+    document.getElementById('btnLobbyHeroLab').onclick = () => openHeroLab(0);
+    document.getElementById('btnOpenHeroLab').onclick = () => openHeroLab(0);
+    document.getElementById('btnCloseHeroLab').onclick = () => {
+      document.getElementById('heroLabModal').classList.add('hidden');
+      renderLobbyUI();
+      if (race.state === 'RACING') buildBottomTouchPads();
+    };
+    document.getElementById('btnSaveAndCloseLab').onclick = () => {
+      document.getElementById('heroLabModal').classList.add('hidden');
+      renderLobbyUI();
+      if (race.state === 'RACING') buildBottomTouchPads();
+    };
+
+    document.getElementById('btnOpenCheats').onclick = () => {
+      document.getElementById('cheatsModal').classList.remove('hidden');
+      renderCheatsModal();
+    };
+    document.getElementById('btnCloseCheats').onclick = () => document.getElementById('cheatsModal').classList.add('hidden');
+    document.getElementById('btnDoneCheats').onclick = () => document.getElementById('cheatsModal').classList.add('hidden');
+    document.getElementById('btnDisableCheats').onclick = () => {
+      Object.keys(save.cheats).forEach(k => save.cheats[k] = false);
+      persist();
+      renderCheatsModal();
+      updateTopHUD();
+    };
+
+    document.getElementById('btnCheatAddPoints').onclick = () => {
+      race.players.forEach(p => p.score += 10000);
+      save.stats.careerPoints += 10000;
+      persist();
+      updateTopHUD();
+      checkAchievements();
+      sfx.sfxAward();
+      launchFireworks(80);
+      showToast('CHEAT BOOST', '+10,000 Points awarded!', '💎');
+    };
+
+    document.getElementById('btnCheatUnlockCosmetics').onclick = () => {
+      ACHIEVEMENTS_LIST.forEach(a => {
+        if (!save.unlocked.includes(a.id)) {
+          save.unlocked.push(a.id);
+          save.stats.careerPoints += a.reward;
+        }
+      });
+      persist();
+      updateTopHUD();
+      sfx.sfxFanfare();
+      launchFireworks(120);
+      showToast('ALL TROPHIES UNLOCKED!', 'Every award in the Hall of Heroes is unlocked!', '👑');
+    };
+
+    document.getElementById('btnCheatParty').onclick = () => {
+      sfx.sfxFanfare();
+      launchFireworks(160);
+      showToast('PARTY MODE!', 'Smartboard fireworks celebration!', '🎉');
+    };
+
+    document.getElementById('btnOpenTrophies').onclick = () => {
+      document.getElementById('trophiesModal').classList.remove('hidden');
+      renderTrophiesModal();
+    };
+    document.getElementById('btnCloseTrophies').onclick = () => document.getElementById('trophiesModal').classList.add('hidden');
+
+    document.getElementById('btnAudioToggle').onclick = () => {
+      save.muted = !save.muted;
+      document.getElementById('audioIcon').textContent = save.muted ? '🔇' : '🔊';
+      persist();
+      if (save.muted) sfx.stopMusic();
+      else if (race.state === 'RACING') sfx.startMusic();
+    };
+
+    document.getElementById('btnMenu').onclick = () => {
+      race.state = 'LOBBY';
+      sfx.stopMusic();
+      document.getElementById('lobbyOverlay').classList.remove('hidden');
+      document.getElementById('podiumOverlay').classList.add('hidden');
+      document.getElementById('touchPadDock').classList.add('hidden');
+      renderLobbyUI();
+    };
+
+    document.getElementById('btnPodiumRematch').onclick = startSmartboardRace;
+    document.getElementById('btnPodiumNext').onclick = () => {
+      save.courseIndex = (save.courseIndex + 1) % COURSES.length;
+      save.arenaTheme = COURSES[save.courseIndex].theme;
+      persist();
+      startSmartboardRace();
+    };
+
+    // Boot Game
+    window.onload = () => {
+      resizeCanvas();
+      document.getElementById('audioIcon').textContent = save.muted ? '🔇' : '🔊';
+      bindHeroLabEvents();
+      renderLobbyUI();
+      checkAchievements();
+      requestAnimationFrame(tick);
+    };
+  </script>
+</body>
+</html>
